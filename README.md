@@ -1,4 +1,4 @@
-# G-code parser [![build status](https://travis-ci.org/cheton/gcode-parser.js.svg?branch=master)](https://travis-ci.org/cheton/gcode-parser.js) [![Coverage Status](https://coveralls.io/repos/cheton/gcode-parser.js/badge.svg)](https://coveralls.io/r/cheton/gcode-parser.js)
+# G-code parser [![build status](https://travis-ci.org/cheton/gcode-parser.svg?branch=master)](https://travis-ci.org/cheton/gcode-parser) [![Coverage Status](https://coveralls.io/repos/cheton/gcode-parser/badge.svg)](https://coveralls.io/r/cheton/gcode-parser)
 [![NPM](https://nodei.co/npm/gcode-parser.png?downloads=true&stars=true)](https://nodei.co/npm/gcode-parser/)
 
 ## Usage
