@@ -5,7 +5,3 @@ node_js:
   - "0.12"
   - "0.10"
   - "iojs"
-script:
-  - gulp
-  - npm test
-  - npm run test-cov
