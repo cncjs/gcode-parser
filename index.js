@@ -72,18 +72,27 @@ class GCodeParser extends Transform {
 
 const parseStream = (stream, callback) => {
     let results = [];
-    callback = callback || (() => {});
-    return stream.pipe(new GCodeParser())
-        .on('data', (data) => {
-            results.push(data);
-        })
-        .on('end', () => {
-            callback(null, results);
-        })
-        .on('error', callback);
+    callback = callback || ((err) => {});
+    try {
+        stream.pipe(new GCodeParser())
+            .on('data', (data) => {
+                results.push(data);
+            })
+            .on('end', () => {
+                callback(null, results);
+            })
+            .on('error', callback);
+    }
+    catch(err) {
+        callback(err);
+        return;
+    }
+
+    return stream;
 };
 
 const parseFile = (file, callback) => {
+    file = file || '';
     let s = fs.createReadStream(file, { encoding: 'utf8' });
     s.on('error', callback);
     return parseStream(s, callback);
