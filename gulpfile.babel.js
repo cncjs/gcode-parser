@@ -19,7 +19,7 @@ gulp.task('test', ['pre-test'], () => {
         // Creating the reports after tests ran
         .pipe(istanbul.writeReports());
         // Enforce a coverage of at least 90%
-        //.pipe(istanbul.enforceThreshold({ thresholds: { global: 90 } }));
+        //.pipe(istanbul.enforceThresholds({ thresholds: { global: 90 } }));
 });
 
 gulp.task('default', () => {
