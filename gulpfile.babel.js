@@ -17,9 +17,18 @@ gulp.task('test', ['pre-test'], () => {
     return gulp.src(['test/*.js'])
         .pipe(mocha())
         // Creating the reports after tests ran
-        .pipe(istanbul.writeReports());
-        // Enforce a coverage of at least 90%
-        //.pipe(istanbul.enforceThresholds({ thresholds: { global: 90 } }));
+        .pipe(istanbul.writeReports())
+        // Checking coverage against minimum acceptable thresholds
+        .pipe(istanbul.enforceThresholds({
+            thresholds: {
+                global: {
+                    statements: 90,
+                    branches: 60,
+                    functions: 90,
+                    lines: 90
+                }
+            }
+        }));
 });
 
 gulp.task('default', () => {
