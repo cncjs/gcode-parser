@@ -8,3 +8,4 @@ node_js:
 script:
   - gulp
   - npm test
+  - npm run test-cov

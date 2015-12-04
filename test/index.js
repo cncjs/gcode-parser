@@ -1,6 +1,6 @@
 import chai from 'chai';
 import fs from 'fs';
-import { GCodeParser, parseFile, parseText, parseStream } from '../';
+import { GCodeParser, parseFile, parseText, parseStream } from '../dist/';
 import _ from 'lodash';
 
 const expect = chai.expect;
