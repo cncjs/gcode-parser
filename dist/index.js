@@ -112,15 +112,23 @@ var GCodeParser = (function (_Transform) {
 
 var parseStream = function parseStream(stream, callback) {
     var results = [];
-    callback = callback || function () {};
-    return stream.pipe(new GCodeParser()).on('data', function (data) {
-        results.push(data);
-    }).on('end', function () {
-        callback(null, results);
-    }).on('error', callback);
+    callback = callback || function (err) {};
+    try {
+        stream.pipe(new GCodeParser()).on('data', function (data) {
+            results.push(data);
+        }).on('end', function () {
+            callback(null, results);
+        }).on('error', callback);
+    } catch (err) {
+        callback(err);
+        return;
+    }
+
+    return stream;
 };
 
 var parseFile = function parseFile(file, callback) {
+    file = file || '';
     var s = _fs2.default.createReadStream(file, { encoding: 'utf8' });
     s.on('error', callback);
     return parseStream(s, callback);

@@ -1,24 +1,34 @@
 import chai from 'chai';
 import fs from 'fs';
-import { GCodeParser, parseFile, parseText, parseStream } from '../';
+import { GCodeParser, parseFile, parseText, parseStream } from '../dist/';
 import _ from 'lodash';
 
 const expect = chai.expect;
 const should = chai.should();
 
 describe('G-code Parser', (done) => {
-	describe('Complete callback', (done) => {
-		it('should call the callback at the end of parsing file.', (done) => {
-            let sampleText = '';
-            parseText(sampleText, (err, results) => {
-                expect(err).to.be.null;
-                expect(results).to.be.an('array');
+	describe('Pass a null value as the first argument', (done) => {
+		it('should call parseText\'s callback.', (done) => {
+            parseText(null, (err, results) => {
+                expect(err).to.be.okay;
+                done();
+            });
+		});
+		it('should call parseFile\'s callback.', (done) => {
+            parseFile(null, (err, results) => {
+                expect(err).to.be.okay;
+                done();
+            });
+		});
+		it('should call parseStream\'s callback.', (done) => {
+            parseStream(null, (err, results) => {
+                expect(err).to.be.okay;
                 done();
             });
 		});
     });
 
-    describe('Empty data', (done) => {
+    describe('Pass an empty text as the first argument', (done) => {
 		it('should get empty results.', (done) => {
             let sampleText = '';
             parseText(sampleText, (err, results) => {

@@ -1,4 +1,3 @@
-
 {
   "name": "gcode-parser",
   "version": "0.1.0",
@@ -14,8 +13,10 @@
     "node": ">=0.10.x"
   },
   "scripts": {
-    "test": "mocha --require babel-core/register",
-    "gulp": "gulp"
+    "test": "gulp && gulp test",
+    "coverage": "istanbul cover node_modules/mocha/bin/_mocha -- --require babel-core/register -R spec",
+    "coverage-clean": "rm -rf ./coverage",
+    "coveralls": "cat ./coverage/lcov.info | ./node_modules/.bin/coveralls"
   },
   "main": "dist/index.js",
   "dependencies": {
@@ -27,9 +28,12 @@
     "babel-preset-es2015": "^6.1.18",
     "babel-preset-stage-0": "^6.1.18",
     "babel-runtime": "^6.2.0",
+    "chai": "^3.4.1",
+    "coveralls": "^2.11.4",
     "gulp": "^3.9.0",
     "gulp-babel": "^6.1.0",
-    "chai": "^3.4.1",
+    "gulp-istanbul": "^0.10.3",
+    "gulp-mocha": "^2.2.0",
     "mocha": "^2.3.4"
   }
 }
