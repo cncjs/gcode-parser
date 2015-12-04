@@ -14,7 +14,7 @@
   },
   "scripts": {
     "test": "gulp && gulp test",
-    "coverage": "istanbul cover node_modules/mocha/bin/_mocha -- --require babel-core/register -R spec"
+    "coverage": "istanbul cover node_modules/mocha/bin/_mocha --report lcovonly -- --require babel-core/register --reporter mocha-lcov-reporter && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage"
   },
   "main": "dist/index.js",
   "dependencies": {
