@@ -4,12 +4,7 @@
   "description": "A G-code parser for Node.js",
   "author": "Cheton Wu <cheton@gmail.com>",
   "homepage": "https://github.com/cheton/gcode-parser",
-  "licenses": [
-    {
-      "type": "MIT",
-      "url": "https://github.com/cheton/gcode-parser/blob/master/LICENSE"
-    }
-  ],
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git@github.com:cheton/gcode-parser.git"
