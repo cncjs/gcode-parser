@@ -18,9 +18,8 @@
     "node": ">=0.10.x"
   },
   "scripts": {
-    "test": "mocha --require babel-core/register",
-    "test-cov": "gulp test",
-    "gulp": "gulp"
+    "test": "gulp && gulp test",
+    "coverage": "istanbul cover node_modules/mocha/bin/_mocha -- --require babel-core/register -R spec"
   },
   "main": "dist/index.js",
   "dependencies": {
@@ -33,6 +32,7 @@
     "babel-preset-stage-0": "^6.1.18",
     "babel-runtime": "^6.2.0",
     "chai": "^3.4.1",
+    "coveralls": "^2.11.4",
     "gulp": "^3.9.0",
     "gulp-babel": "^6.1.0",
     "gulp-istanbul": "^0.10.3",
