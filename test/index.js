@@ -7,29 +7,29 @@ const expect = chai.expect;
 const should = chai.should();
 
 describe('G-code Parser', (done) => {
-	describe('Pass a null value as the first argument', (done) => {
-		it('should call parseText\'s callback.', (done) => {
+    describe('Pass a null value as the first argument', (done) => {
+        it('should call parseText\'s callback.', (done) => {
             parseText(null, (err, results) => {
                 expect(err).to.be.okay;
                 done();
             });
-		});
-		it('should call parseFile\'s callback.', (done) => {
+        });
+        it('should call parseFile\'s callback.', (done) => {
             parseFile(null, (err, results) => {
                 expect(err).to.be.okay;
                 done();
             });
-		});
-		it('should call parseStream\'s callback.', (done) => {
+        });
+        it('should call parseStream\'s callback.', (done) => {
             parseStream(null, (err, results) => {
                 expect(err).to.be.okay;
                 done();
             });
-		});
+        });
     });
 
     describe('Pass an empty text as the first argument', (done) => {
-		it('should get empty results.', (done) => {
+        it('should get empty results.', (done) => {
             let sampleText = '';
             parseText(sampleText, (err, results) => {
                 expect(results.length).to.be.empty;
@@ -39,7 +39,7 @@ describe('G-code Parser', (done) => {
     });
 
     describe('Contains only comments', (done) => {
-		it('should get empty results.', (done) => {
+        it('should get empty results.', (done) => {
             let sampleText = [
                 ';',
                 '; Operation:    0',
@@ -60,17 +60,17 @@ describe('G-code Parser', (done) => {
         });
     });
 
-	describe('File not found exception', (done) => {
-		it('should fail the callback if a file is not present.', (done) => {
+    describe('File not found exception', (done) => {
+        it('should fail the callback if a file is not present.', (done) => {
             parseFile('test/fixtures/NO_FILE_ERROR', (err, results) => {
                 expect(err).to.not.be.null;
                 expect(err.code).to.equal('ENOENT');
                 done();
             });
-		});
-	});
+        });
+    });
 
-	describe('parseStream / parseText / parseFile', (done) => {
+    describe('parseStream / parseText / parseFile', (done) => {
         let expectedResults = [
             {
                 line: 'G0 X-5 Y0 Z0 F200',
@@ -114,7 +114,7 @@ describe('G-code Parser', (done) => {
                 expect(results).to.deep.equal(expectedResults);
                 done();
             });
-		});
+        });
 
         it('should get the expected results in the parseText\'s callback.', (done) => {
             let text = fs.readFileSync('test/fixtures/circle.nc', 'utf8');
@@ -122,7 +122,7 @@ describe('G-code Parser', (done) => {
                 expect(results).to.deep.equal(expectedResults);
                 done();
             });
-		});
+        });
 
         it('should get the expected results in the parseStream\'s callback.', (done) => {
             let stream = fs.createReadStream('test/fixtures/circle.nc', { encoding: 'utf8' });
@@ -130,11 +130,11 @@ describe('G-code Parser', (done) => {
                 expect(results).to.deep.equal(expectedResults);
                 done();
             });
-		});
-	});
+        });
+    });
 
-	describe('More G-code Examples', (done) => {
-		it('should contain the line number.', (done) => {
+    describe('More G-code Examples', (done) => {
+        it('should contain the line number.', (done) => {
             parseFile('test/fixtures/circle-inch.nc', (err, list) => {
                 expect(err).to.be.null;
                 list.forEach((data) => {
@@ -144,5 +144,5 @@ describe('G-code Parser', (done) => {
                 done();
             });
         });
-	});
+    });
 });
