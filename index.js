@@ -71,9 +71,10 @@ class GCodeParser extends Transform {
 }
 
 const parseStream = (stream, callback) => {
-    let results = [];
     callback = callback || ((err) => {});
+
     try {
+        let results = [];
         stream.pipe(new GCodeParser())
             .on('data', (data) => {
                 results.push(data);
