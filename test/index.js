@@ -113,14 +113,14 @@ console.log(sampleText, err, results);
         ];
 
         it('should get the expected results in the parseFile\'s callback.', (done) => {
-            parseFile('test/fixtures/circle.nc', (err, results) => {
+            parseFile('test/fixtures/circle.gcode', (err, results) => {
                 expect(results).to.deep.equal(expectedResults);
                 done();
             });
         });
 
         it('should get the expected results in the parseText\'s callback.', (done) => {
-            let text = fs.readFileSync('test/fixtures/circle.nc', 'utf8');
+            let text = fs.readFileSync('test/fixtures/circle.gcode', 'utf8');
             parseText(text, (err, results) => {
                 expect(results).to.deep.equal(expectedResults);
                 done();
@@ -128,7 +128,7 @@ console.log(sampleText, err, results);
         });
 
         it('should get the expected results in the parseStream\'s callback.', (done) => {
-            let stream = fs.createReadStream('test/fixtures/circle.nc', { encoding: 'utf8' });
+            let stream = fs.createReadStream('test/fixtures/circle.gcode', { encoding: 'utf8' });
             parseStream(stream, (err, results) => {
                 expect(results).to.deep.equal(expectedResults);
                 done();
@@ -138,7 +138,7 @@ console.log(sampleText, err, results);
 
     describe('More examples', (done) => {
         it('should contain the line number.', (done) => {
-            parseFile('test/fixtures/circle-inch.nc', (err, list) => {
+            parseFile('test/fixtures/circle-inch.gcode', (err, list) => {
                 expect(err).to.be.null;
                 list.forEach((data) => {
                     let { N } = data;
@@ -166,7 +166,7 @@ console.log(sampleText, err, results);
                     words: [['G', 0], ['X', -5], ['Y', 0], ['Z', 0], ['F', 200]]
                 }
             ];
-            parseFile('test/fixtures/spaces.nc', (err, results) => {
+            parseFile('test/fixtures/spaces.gcode', (err, results) => {
                 expect(results).to.deep.equal(expectedResults);
                 done();
             });
