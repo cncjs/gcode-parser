@@ -145,38 +145,39 @@ console.log(sampleText, err, results);
             let expectedResults = [
                 {
                     N: 3,
-                    checksum: 57,
-                    line: 'N3 T0*57',
+                    cs: 57,
+                    line: 'N3 T0',
                     words: [['T', 0]]
                 },
                 {
                     N: 4,
-                    checksum: 67,
-                    line: 'N4 G92 E0*67',
+                    cs: 67,
+                    line: 'N4 G92 E0',
                     words: [['G', 92], ['E', 0]]
                 },
                 {
                     N: 5,
-                    checksum: 22,
-                    line: 'N5 G28*22',
+                    cs: 22,
+                    line: 'N5 G28',
                     words: [['G', 28]]
                 },
                 {
                     N: 6,
-                    checksum: 82,
-                    line: 'N6 G1 F1500.0*82',
+                    cs: 82,
+                    line: 'N6 G1 F1500.0',
                     words: [['G', 1], ['F', 1500]]
                 },
                 {
                     N: 7,
-                    checksum: 85,
-                    line: 'N7 G1 X2.0 Y2.0 F3000.0*85',
+                    cs: 85,
+                    line: 'N7 G1 X2.0 Y2.0 F3000.0',
                     words: [['G', 1], ['X', 2], ['Y', 2], ['F', 3000]]
                 },
                 {
+                    err: true, // checksum failed
                     N: 8,
-                    checksum: 33,
-                    line: 'N8 G1 X3.0 Y3.0*33',
+                    cs: 30, // invalid checksum
+                    line: 'N8 G1 X3.0 Y3.0',
                     words: [['G', 1], ['X', 3], ['Y', 3]]
                 }
             ];

@@ -19,6 +19,19 @@ const removeSpaces = (s) => {
     return s.replace(/\s+/g, '');
 };
 
+// http://reprap.org/wiki/G-code#Special_fields
+// The checksum "cs" for a GCode string "cmd" (including its line number) is computed
+// by exor-ing the bytes in the string up to and not including the * character.
+const computeChecksum = (s) => {
+    let cs = 0;
+    s = s || '';
+    for (let i = 0; i < s.length; ++i) {
+        let c = s[i].charCodeAt(0);
+        cs = cs ^ c;
+    }
+    return cs;
+};
+
 class GCodeParser extends Transform {
     constructor(options) {
         super(_.extend({}, options, { objectMode: true }));
@@ -43,8 +56,8 @@ class GCodeParser extends Transform {
                 return;
             }
 
-            let n;
-            let checksum;
+            let n; // Line number
+            let cs; // Checksum
             let words = [];
             let list = removeSpaces(line)
                 .match(/([a-zA-Z][0-9\+\-\.]*)|(\*[0-9]+)/igm) || [];
@@ -68,8 +81,8 @@ class GCodeParser extends Transform {
                 }
 
                 { // *: Checksum
-                    if (letter === '*' && _.isUndefined(checksum)) {
-                        checksum = Number(argument);
+                    if (letter === '*' && _.isUndefined(cs)) {
+                        cs = Number(argument);
                         return;
                     }
                 }
@@ -77,11 +90,19 @@ class GCodeParser extends Transform {
                 words.push([letter, argument]);
             });
 
+            // Exclude * (Checksum) from the line
+            if (line.lastIndexOf('*') >= 0) {
+                line = line.substr(0, line.lastIndexOf('*'));
+            }
+
             let obj = {};
             obj.line = line;
             obj.words = words;
-            (typeof(n) !== 'undefined') && (obj.N = n); // N: Line number
-            (typeof(checksum) !== 'undefined') && (obj.checksum = checksum); // *: Checksum
+            (typeof(n) !== 'undefined') && (obj.N = n); // Line number
+            (typeof(cs) !== 'undefined') && (obj.cs = cs); // Checksum
+            if (obj.cs && (computeChecksum(line) !== obj.cs)) {
+                obj.err = true; // checksum failed
+            }
 
             this.push(obj);
         });
