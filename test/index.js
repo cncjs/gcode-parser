@@ -77,37 +77,30 @@ console.log(sampleText, err, results);
         let expectedResults = [
             {
                 line: 'G0 X-5 Y0 Z0 F200',
-                N: undefined,
                 words: [['G', 0], ['X', -5], ['Y', 0], ['Z', 0], ['F', 200]]
             },
             {
                 line: 'G2 X0 Y5 I5 J0 F200',
-                N: undefined,
                 words: [['G', 2], ['X', 0], ['Y', 5], ['I', 5], ['J', 0], ['F', 200]]
             },
             {
                 line: 'G02 X5 Y0 I0 J-5',
-                N: undefined,
                 words: [['G', 2], ['X', 5], ['Y', 0], ['I', 0], ['J', -5]]
             },
             {
                 line: 'G02 X0 Y-5 I-5 J0',
-                N: undefined,
                 words: [['G', 2], ['X', 0], ['Y',-5], ['I', -5], ['J', 0]]
             },
             {
                 line: 'G02 X-5 Y0 I0 J5',
-                N: undefined,
                 words: [['G', 2], ['X', -5], ['Y', 0], ['I', 0], ['J', 5]]
             },
             {
                 line: 'G01 Z1 F500',
-                N: undefined,
                 words: [['G', 1], ['Z', 1], ['F', 500]]
             },
             {
                 line: 'G00 X0 Y0 Z5',
-                N: undefined,
                 words: [['G', 0], ['X', 0], ['Y', 0], ['Z', 5]]
             }
         ];
@@ -148,21 +141,63 @@ console.log(sampleText, err, results);
             });
         });
 
+        it('should get the expected results for special fields.', (done) => {
+            let expectedResults = [
+                {
+                    N: 3,
+                    checksum: 57,
+                    line: 'N3 T0*57',
+                    words: [['T', 0]]
+                },
+                {
+                    N: 4,
+                    checksum: 67,
+                    line: 'N4 G92 E0*67',
+                    words: [['G', 92], ['E', 0]]
+                },
+                {
+                    N: 5,
+                    checksum: 22,
+                    line: 'N5 G28*22',
+                    words: [['G', 28]]
+                },
+                {
+                    N: 6,
+                    checksum: 82,
+                    line: 'N6 G1 F1500.0*82',
+                    words: [['G', 1], ['F', 1500]]
+                },
+                {
+                    N: 7,
+                    checksum: 85,
+                    line: 'N7 G1 X2.0 Y2.0 F3000.0*85',
+                    words: [['G', 1], ['X', 2], ['Y', 2], ['F', 3000]]
+                },
+                {
+                    N: 8,
+                    checksum: 33,
+                    line: 'N8 G1 X3.0 Y3.0*33',
+                    words: [['G', 1], ['X', 3], ['Y', 3]]
+                }
+            ];
+            parseFile('test/fixtures/special-fields.gcode', (err, results) => {
+                expect(results).to.deep.equal(expectedResults);
+                done();
+            });
+        });
+
         it('should allow spaces between commands.', (done) => {
             let expectedResults = [
                 {
                     line: 'G0X-5Y0Z0F200',
-                    N: undefined,
                     words: [['G', 0], ['X', -5], ['Y', 0], ['Z', 0], ['F', 200]]
                 },
                 {
                     line: 'G0 X-5 Y0 Z0 F200',
-                    N: undefined,
                     words: [['G', 0], ['X', -5], ['Y', 0], ['Z', 0], ['F', 200]]
                 },
                 {
                     line: 'G0 X -5 Y 0 Z 0 F 200',
-                    N: undefined,
                     words: [['G', 0], ['X', -5], ['Y', 0], ['Z', 0], ['F', 200]]
                 }
             ];
