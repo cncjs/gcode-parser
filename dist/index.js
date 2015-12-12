@@ -79,27 +79,47 @@ var GCodeParser = (function (_Transform) {
                 }
 
                 var n = undefined;
+                var checksum = undefined;
                 var words = [];
-                var list = removeSpaces(line).match(/([a-zA-Z][^a-zA-Z]*)/igm) || [];
-                _lodash2.default.each(list, function (word) {
-                    var r = word.match(/([a-zA-Z])([^a-zA-Z]*)/) || [];
-                    var letter = (r[1] || '').toUpperCase();
-                    var argument = _lodash2.default.isNaN(parseFloat(r[2])) ? r[2] : Number(r[2]);
+                var list = removeSpaces(line).match(/([a-zA-Z][0-9\+\-\.]*)|(\*[0-9]+)/igm) || [];
 
-                    if (letter === 'N' && typeof n === 'undefined') {
-                        // Line (block) number in program
-                        n = Number(argument);
-                        return;
+                _lodash2.default.each(list, function (word) {
+                    var letter = word[0].toUpperCase();
+                    var argument = word.substr(1);
+
+                    argument = _lodash2.default.isNaN(parseFloat(argument)) ? argument : Number(argument);
+
+                    //
+                    // Special fields
+                    //
+
+                    {
+                        // N: Line number
+                        if (letter === 'N' && _lodash2.default.isUndefined(n)) {
+                            // Line (block) number in program
+                            n = Number(argument);
+                            return;
+                        }
+                    }
+
+                    {
+                        // *: Checksum
+                        if (letter === '*' && _lodash2.default.isUndefined(checksum)) {
+                            checksum = Number(argument);
+                            return;
+                        }
                     }
 
                     words.push([letter, argument]);
                 });
 
-                _this2.push({
-                    line: line,
-                    N: n,
-                    words: words
-                });
+                var obj = {};
+                obj.line = line;
+                obj.words = words;
+                typeof n !== 'undefined' && (obj.N = n); // N: Line number
+                typeof checksum !== 'undefined' && (obj.checksum = checksum); // *: Checksum
+
+                _this2.push(obj);
             });
 
             next();
