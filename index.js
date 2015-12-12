@@ -44,28 +44,46 @@ class GCodeParser extends Transform {
             }
 
             let n;
+            let checksum;
             let words = [];
             let list = removeSpaces(line)
-                .match(/([a-zA-Z][^a-zA-Z]*)/igm) || [];
-            _.each(list, (word) => {
-                let r = word.match(/([a-zA-Z])([^a-zA-Z]*)/) || [];
-                let letter = (r[1] || '').toUpperCase();
-                let argument = _.isNaN(parseFloat(r[2])) ? r[2] : Number(r[2]);
+                .match(/([a-zA-Z][0-9\+\-\.]*)|(\*[0-9]+)/igm) || [];
 
-                if (letter === 'N' && (typeof n === 'undefined')) {
-                    // Line (block) number in program
-                    n = Number(argument);
-                    return;
+            _.each(list, (word) => {
+                let letter = word[0].toUpperCase();
+                let argument = word.substr(1);
+
+                argument = _.isNaN(parseFloat(argument)) ? argument : Number(argument);
+
+                //
+                // Special fields
+                //
+
+                { // N: Line number
+                    if (letter === 'N' && _.isUndefined(n)) {
+                        // Line (block) number in program
+                        n = Number(argument);
+                        return;
+                    }
+                }
+
+                { // *: Checksum
+                    if (letter === '*' && _.isUndefined(checksum)) {
+                        checksum = Number(argument);
+                        return;
+                    }
                 }
 
                 words.push([letter, argument]);
             });
 
-            this.push({
-                line: line,
-                N: n,
-                words: words
-            });
+            let obj = {};
+            obj.line = line;
+            obj.words = words;
+            (typeof(n) !== 'undefined') && (obj.N = n); // N: Line number
+            (typeof(checksum) !== 'undefined') && (obj.checksum = checksum); // *: Checksum
+
+            this.push(obj);
         });
 
         next();
