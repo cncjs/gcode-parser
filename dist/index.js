@@ -40,6 +40,10 @@ var stripComments = function stripComments(s) {
     return s.replace(re1, '').replace(re2, '');
 };
 
+var removeSpaces = function removeSpaces(s) {
+    return s.replace(/\s+/g, '');
+};
+
 var GCodeParser = (function (_Transform) {
     _inherits(GCodeParser, _Transform);
 
@@ -69,16 +73,16 @@ var GCodeParser = (function (_Transform) {
 
             var lines = chunk.split(/\r\n|\r|\n/g);
             _lodash2.default.each(lines, function (line) {
-                line = _lodash2.default.trim(stripComments(line)) || '';
+                line = _lodash2.default.trim(stripComments(line));
                 if (line.length === 0) {
                     return;
                 }
 
                 var n = undefined;
                 var words = [];
-                var list = line.match(/([a-zA-Z][^\s]*)/igm) || [];
+                var list = removeSpaces(line).match(/([a-zA-Z][^a-zA-Z]*)/igm) || [];
                 _lodash2.default.each(list, function (word) {
-                    var r = word.match(/([a-zA-Z])([^\s]*)/) || [];
+                    var r = word.match(/([a-zA-Z])([^a-zA-Z]*)/) || [];
                     var letter = (r[1] || '').toUpperCase();
                     var argument = _lodash2.default.isNaN(parseFloat(r[2])) ? r[2] : Number(r[2]);
 
@@ -111,14 +115,17 @@ var GCodeParser = (function (_Transform) {
 })(_stream.Transform);
 
 var parseStream = function parseStream(stream, callback) {
-    var results = [];
     callback = callback || function (err) {};
+
     try {
-        stream.pipe(new GCodeParser()).on('data', function (data) {
-            results.push(data);
-        }).on('end', function () {
-            callback(null, results);
-        }).on('error', callback);
+        (function () {
+            var results = [];
+            stream.pipe(new GCodeParser()).on('data', function (data) {
+                results.push(data);
+            }).on('end', function () {
+                callback(null, results);
+            }).on('error', callback);
+        })();
     } catch (err) {
         callback(err);
         return;

@@ -53,7 +53,10 @@ describe('G-code Parser', (done) => {
                 '; Cut rate:     1016',
                 '  ' // empty line
             ].join('\n');
+
             parseText(sampleText, (err, results) => {
+console.log(sampleText, err, results);
+
                 expect(results.length).to.be.empty;
                 done();
             });
@@ -133,7 +136,7 @@ describe('G-code Parser', (done) => {
         });
     });
 
-    describe('More G-code Examples', (done) => {
+    describe('More examples', (done) => {
         it('should contain the line number.', (done) => {
             parseFile('test/fixtures/circle-inch.nc', (err, list) => {
                 expect(err).to.be.null;
@@ -141,6 +144,30 @@ describe('G-code Parser', (done) => {
                     let { N } = data;
                     expect(N).to.exist;
                 });
+                done();
+            });
+        });
+
+        it('should allow spaces between commands.', (done) => {
+            let expectedResults = [
+                {
+                    line: 'G0X-5Y0Z0F200',
+                    N: undefined,
+                    words: [['G', 0], ['X', -5], ['Y', 0], ['Z', 0], ['F', 200]]
+                },
+                {
+                    line: 'G0 X-5 Y0 Z0 F200',
+                    N: undefined,
+                    words: [['G', 0], ['X', -5], ['Y', 0], ['Z', 0], ['F', 200]]
+                },
+                {
+                    line: 'G0 X -5 Y 0 Z 0 F 200',
+                    N: undefined,
+                    words: [['G', 0], ['X', -5], ['Y', 0], ['Z', 0], ['F', 200]]
+                }
+            ];
+            parseFile('test/fixtures/spaces.nc', (err, results) => {
+                expect(results).to.deep.equal(expectedResults);
                 done();
             });
         });
