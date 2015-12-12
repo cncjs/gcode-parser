@@ -15,6 +15,10 @@ const stripComments = (s) => {
     return s.replace(re1, '').replace(re2, '');
 };
 
+const removeSpaces = (s) => {
+    return s.replace(/\s+/g, '');
+};
+
 class GCodeParser extends Transform {
     constructor(options) {
         super(_.extend({}, options, { objectMode: true }));
@@ -34,16 +38,17 @@ class GCodeParser extends Transform {
 
         let lines = chunk.split(/\r\n|\r|\n/g);
         _.each(lines, (line) => {
-            line = _.trim(stripComments(line)) || '';
+            line = _.trim(stripComments(line));
             if (line.length === 0) {
                 return;
             }
 
             let n;
             let words = [];
-            let list = line.match(/([a-zA-Z][^\s]*)/igm) || [];
+            let list = removeSpaces(line)
+                .match(/([a-zA-Z][^a-zA-Z]*)/igm) || [];
             _.each(list, (word) => {
-                let r = word.match(/([a-zA-Z])([^\s]*)/) || [];
+                let r = word.match(/([a-zA-Z])([^a-zA-Z]*)/) || [];
                 let letter = (r[1] || '').toUpperCase();
                 let argument = _.isNaN(parseFloat(r[2])) ? r[2] : Number(r[2]);
 
