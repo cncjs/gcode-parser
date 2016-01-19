@@ -28,3 +28,6 @@ parser.parseText(text, function(err, data) {
     console.log(data);
 });
 ```
+
+## Toolpath Generator
+Check out [gcode-toolpath](https://github.com/cheton/gcode-toolpath) for an example.
