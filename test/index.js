@@ -1,6 +1,6 @@
 import chai from 'chai';
 import fs from 'fs';
-import { GCodeParser, parseFile, parseText, parseStream } from '../dist/';
+import { GCodeParser, parseFile, parseString, parseStream } from '../dist/';
 import _ from 'lodash';
 
 const expect = chai.expect;
@@ -8,8 +8,8 @@ const should = chai.should();
 
 describe('G-code Parser', (done) => {
     describe('Pass a null value as the first argument', (done) => {
-        it('should call parseText\'s callback.', (done) => {
-            parseText(null, (err, results) => {
+        it('should call parseString\'s callback.', (done) => {
+            parseString(null, (err, results) => {
                 expect(err).to.be.okay;
                 done();
             });
@@ -31,7 +31,7 @@ describe('G-code Parser', (done) => {
     describe('Pass an empty text as the first argument', (done) => {
         it('should get empty results.', (done) => {
             let sampleText = '';
-            parseText(sampleText, (err, results) => {
+            parseString(sampleText, (err, results) => {
                 expect(results.length).to.be.empty;
                 done();
             });
@@ -54,7 +54,7 @@ describe('G-code Parser', (done) => {
                 '  ' // empty line
             ].join('\n');
 
-            parseText(sampleText, (err, results) => {
+            parseString(sampleText, (err, results) => {
 console.log(sampleText, err, results);
 
                 expect(results.length).to.be.empty;
@@ -73,7 +73,7 @@ console.log(sampleText, err, results);
         });
     });
 
-    describe('parseStream / parseText / parseFile', (done) => {
+    describe('parseFile / parseStream / parseString', (done) => {
         let expectedResults = [
             {
                 line: 'G0 X-5 Y0 Z0 F200',
@@ -112,17 +112,17 @@ console.log(sampleText, err, results);
             });
         });
 
-        it('should get the expected results in the parseText\'s callback.', (done) => {
-            let text = fs.readFileSync('test/fixtures/circle.gcode', 'utf8');
-            parseText(text, (err, results) => {
+        it('should get the expected results in the parseStream\'s callback.', (done) => {
+            let stream = fs.createReadStream('test/fixtures/circle.gcode', { encoding: 'utf8' });
+            parseStream(stream, (err, results) => {
                 expect(results).to.deep.equal(expectedResults);
                 done();
             });
         });
 
-        it('should get the expected results in the parseStream\'s callback.', (done) => {
-            let stream = fs.createReadStream('test/fixtures/circle.gcode', { encoding: 'utf8' });
-            parseStream(stream, (err, results) => {
+        it('should get the expected results in the parseString\'s callback.', (done) => {
+            let text = fs.readFileSync('test/fixtures/circle.gcode', 'utf8');
+            parseString(text, (err, results) => {
                 expect(results).to.deep.equal(expectedResults);
                 done();
             });

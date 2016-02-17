@@ -10,8 +10,8 @@ const streamify = (text) => {
 };
 
 const stripComments = (s) => {
-    let re1 = /^\s+|\s+$/g; // Strip leading and trailing spaces
-    let re2 = /\s*[#;].*$/g; // Strip everything after # or ; to the end of the line, including preceding spaces
+    const re1 = /\s*[%#;].*/g; // Strip everything after %, #, or ; to the end of the line, including preceding spaces
+    const re2 = /\s*\(.*\)/g; // Remove anything inside the parentheses
     return s.replace(re1, '').replace(re2, '');
 };
 
@@ -49,18 +49,20 @@ class GCodeParser extends Transform {
             chunk = chunk.toString(encoding);
         }
 
-        let lines = chunk.split(/\r\n|\r|\n/g);
+        const lines = stripComments(chunk)
+            .split(/\r\n|\r|\n/g);
+
         _.each(lines, (line) => {
-            line = _.trim(stripComments(line));
-            if (line.length === 0) {
+            const list = removeSpaces(line)
+                .match(/([a-zA-Z][0-9\+\-\.]*)|(\*[0-9]+)/igm) || [];
+
+            if (list.length === 0) {
                 return;
             }
 
             let n; // Line number
             let cs; // Checksum
             let words = [];
-            let list = removeSpaces(line)
-                .match(/([a-zA-Z][0-9\+\-\.]*)|(\*[0-9]+)/igm) || [];
 
             _.each(list, (word) => {
                 let letter = word[0].toUpperCase();
@@ -143,7 +145,7 @@ const parseFile = (file, callback) => {
     return parseStream(s, callback);
 };
 
-const parseText = (text, callback) => {
+const parseString = (text, callback) => {
     let s = streamify(text);
     return parseStream(s, callback);
 };
@@ -152,5 +154,5 @@ export {
     GCodeParser,
     parseStream,
     parseFile,
-    parseText
+    parseString
 };

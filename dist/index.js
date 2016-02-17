@@ -1,11 +1,11 @@
 'use strict';
 
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
 Object.defineProperty(exports, "__esModule", {
     value: true
 });
-exports.parseText = exports.parseFile = exports.parseStream = exports.GCodeParser = undefined;
+exports.parseString = exports.parseFile = exports.parseStream = exports.GCodeParser = undefined;
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
 var _lodash = require('lodash');
 
@@ -35,8 +35,8 @@ var streamify = function streamify(text) {
 };
 
 var stripComments = function stripComments(s) {
-    var re1 = /^\s+|\s+$/g; // Strip leading and trailing spaces
-    var re2 = /\s*[#;].*$/g; // Strip everything after # or ; to the end of the line, including preceding spaces
+    var re1 = /\s*[%#;].*/g; // Strip everything after %, #, or ; to the end of the line, including preceding spaces
+    var re2 = /\s*\(.*\)/g; // Remove anything inside the parentheses
     return s.replace(re1, '').replace(re2, '');
 };
 
@@ -84,17 +84,18 @@ var GCodeParser = function (_Transform) {
                 chunk = chunk.toString(encoding);
             }
 
-            var lines = chunk.split(/\r\n|\r|\n/g);
+            var lines = stripComments(chunk).split(/\r\n|\r|\n/g);
+
             _lodash2.default.each(lines, function (line) {
-                line = _lodash2.default.trim(stripComments(line));
-                if (line.length === 0) {
+                var list = removeSpaces(line).match(/([a-zA-Z][0-9\+\-\.]*)|(\*[0-9]+)/igm) || [];
+
+                if (list.length === 0) {
                     return;
                 }
 
                 var n = undefined; // Line number
                 var cs = undefined; // Checksum
                 var words = [];
-                var list = removeSpaces(line).match(/([a-zA-Z][0-9\+\-\.]*)|(\*[0-9]+)/igm) || [];
 
                 _lodash2.default.each(list, function (word) {
                     var letter = word[0].toUpperCase();
@@ -182,7 +183,7 @@ var parseFile = function parseFile(file, callback) {
     return parseStream(s, callback);
 };
 
-var parseText = function parseText(text, callback) {
+var parseString = function parseString(text, callback) {
     var s = streamify(text);
     return parseStream(s, callback);
 };
@@ -190,4 +191,4 @@ var parseText = function parseText(text, callback) {
 exports.GCodeParser = GCodeParser;
 exports.parseStream = parseStream;
 exports.parseFile = parseFile;
-exports.parseText = parseText;
+exports.parseString = parseString;
