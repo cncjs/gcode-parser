@@ -22,9 +22,9 @@ parser.parseStream(stream, function(err, data) {
     console.log(data);
 });
 
-// Parse from text string
+// Parse from string
 var text = fs.readFileSync(file, 'utf8');
-parser.parseText(text, function(err, data) {
+parser.parseString(text, function(err, data) {
     console.log(data);
 });
 ```
