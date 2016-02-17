@@ -1,6 +1,6 @@
 {
   "name": "gcode-parser",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "description": "A G-code parser for Node.js",
   "author": "Cheton Wu <cheton@gmail.com>",
   "homepage": "https://github.com/cheton/gcode-parser",
@@ -24,7 +24,7 @@
     "coverage-clean": "rm -rf ./coverage",
     "coveralls": "cat ./coverage/lcov.info | ./node_modules/.bin/coveralls"
   },
-  "main": "dist/index.js",
+  "main": "lib/index.js",
   "dependencies": {
     "lodash": "^4.0.0"
   },
