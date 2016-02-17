@@ -55,9 +55,7 @@ describe('G-code Parser', (done) => {
             ].join('\n');
 
             parseString(sampleText, (err, results) => {
-console.log(sampleText, err, results);
-
-                expect(results.length).to.be.empty;
+                expect(results.length).to.be.equal(10);
                 done();
             });
         });
@@ -69,6 +67,29 @@ console.log(sampleText, err, results);
                 expect(err).to.not.be.null;
                 expect(err.code).to.equal('ENOENT');
                 done();
+            });
+        });
+    });
+
+    describe('EventEmitter', (done) => {
+        it('should call event listeners.', (done) => {
+            let index = 0;
+            const stream = fs.createReadStream('test/fixtures/circle.gcode', { encoding: 'utf8' });
+
+            parseStream(stream, (err, results) => {
+                expect(results.length).to.be.equal(7);
+                done();
+            })
+            .on('data', (data) => {
+                expect(data).to.be.an('object');
+            })
+            .on('progress', ({ current, total }) => {
+                expect(current).to.be.equal(index);
+                expect(total).to.be.equal(7);
+                ++index;
+            })
+            .on('end', (results) => {
+                expect(results).to.be.an('array');
             });
         });
     });
@@ -113,7 +134,7 @@ console.log(sampleText, err, results);
         });
 
         it('should get the expected results in the parseStream\'s callback.', (done) => {
-            let stream = fs.createReadStream('test/fixtures/circle.gcode', { encoding: 'utf8' });
+            const stream = fs.createReadStream('test/fixtures/circle.gcode', { encoding: 'utf8' });
             parseStream(stream, (err, results) => {
                 expect(results).to.deep.equal(expectedResults);
                 done();
@@ -121,8 +142,8 @@ console.log(sampleText, err, results);
         });
 
         it('should get the expected results in the parseString\'s callback.', (done) => {
-            let text = fs.readFileSync('test/fixtures/circle.gcode', 'utf8');
-            parseString(text, (err, results) => {
+            const str = fs.readFileSync('test/fixtures/circle.gcode', 'utf8');
+            parseString(str, (err, results) => {
                 expect(results).to.deep.equal(expectedResults);
                 done();
             });
@@ -143,6 +164,16 @@ console.log(sampleText, err, results);
 
         it('should get the expected results for special fields.', (done) => {
             let expectedResults = [
+                {
+                    N: 1,
+                    line: 'N1 G20 (inches)',
+                    words: [['G', 20]]
+                },
+                {
+                    N: 2,
+                    line: 'N2 G90 (absolute)',
+                    words: [['G', 90]]
+                },
                 {
                     N: 3,
                     cs: 57,
@@ -202,10 +233,11 @@ console.log(sampleText, err, results);
                     words: [['G', 0], ['X', -5], ['Y', 0], ['Z', 0], ['F', 200]]
                 }
             ];
+
             parseFile('test/fixtures/spaces.gcode', (err, results) => {
                 expect(results).to.deep.equal(expectedResults);
                 done();
-            });
+            })
         });
     });
 });

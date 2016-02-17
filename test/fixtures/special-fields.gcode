@@ -1,3 +1,5 @@
+N1 G20 (inches)
+N2 G90 (absolute)
 N3 T0*57
 N4 G92 E0*67
 N5 G28*22
