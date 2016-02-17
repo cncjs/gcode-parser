@@ -145,7 +145,7 @@ const parseFile = (file, callback) => {
     return parseStream(s, callback);
 };
 
-const parseText = (text, callback) => {
+const parseString = (text, callback) => {
     let s = streamify(text);
     return parseStream(s, callback);
 };
@@ -154,5 +154,5 @@ export {
     GCodeParser,
     parseStream,
     parseFile,
-    parseText
+    parseString
 };
