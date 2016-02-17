@@ -1,6 +1,9 @@
 import _ from 'lodash';
+import events from 'events';
 import fs from 'fs';
 import stream, { Transform } from 'stream';
+
+const noop = () => {};
 
 const streamify = (text) => {
     let s = new stream.Readable();
@@ -17,7 +20,7 @@ const stripComments = (s) => {
 
 const removeSpaces = (s) => {
     return s.replace(/\s+/g, '');
-};
+}
 
 // http://reprap.org/wiki/G-code#Special_fields
 // The checksum "cs" for a GCode string "cmd" (including its line number) is computed
@@ -49,16 +52,22 @@ class GCodeParser extends Transform {
             chunk = chunk.toString(encoding);
         }
 
-        const lines = stripComments(chunk)
-            .split(/\r\n|\r|\n/g);
+        const lines = _(chunk.split(/\r\n|\r|\n/g))
+            .map((s) => {
+                // Removes leading and trailing whitespace
+                return _.trim(s);
+            })
+            .filter() // Removes empty strings from array
+            .value();
 
-        _.each(lines, (line) => {
-            const list = removeSpaces(line)
+        this.emit('progress', {
+            current: 0, // current progress value
+            total: lines.length // total progress value
+        });
+
+        _.each(lines, (line, index) => {
+            const list = removeSpaces(stripComments(line))
                 .match(/([a-zA-Z][0-9\+\-\.]*)|(\*[0-9]+)/igm) || [];
-
-            if (list.length === 0) {
-                return;
-            }
 
             let n; // Line number
             let cs; // Checksum
@@ -106,6 +115,11 @@ class GCodeParser extends Transform {
                 obj.err = true; // checksum failed
             }
 
+            this.emit('progress', {
+                current: index + 1, // current progress value
+                total: lines.length // total progress value
+            });
+
             this.push(obj);
         });
 
@@ -116,17 +130,22 @@ class GCodeParser extends Transform {
     }
 }
 
-const parseStream = (stream, callback) => {
-    callback = callback || ((err) => {});
+const parseStream = (stream, callback = noop) => {
+    const emitter = new events.EventEmitter();
 
     try {
         let results = [];
         stream.pipe(new GCodeParser())
             .on('data', (data) => {
+                emitter.emit('data', data);
                 results.push(data);
             })
+            .on('progress', ({ current, total }) => {
+                emitter.emit('progress', { current, total });
+            })
             .on('end', () => {
-                callback(null, results);
+                emitter.emit('end', results);
+                callback && callback(null, results);
             })
             .on('error', callback);
     }
@@ -135,17 +154,17 @@ const parseStream = (stream, callback) => {
         return;
     }
 
-    return stream;
+    return emitter;
 };
 
-const parseFile = (file, callback) => {
+const parseFile = (file, callback = noop) => {
     file = file || '';
     let s = fs.createReadStream(file, { encoding: 'utf8' });
     s.on('error', callback);
     return parseStream(s, callback);
 };
 
-const parseString = (str, callback) => {
+const parseString = (str, callback = noop) => {
     let s = streamify(str);
     return parseStream(s, callback);
 };

@@ -11,6 +11,10 @@ var _lodash = require('lodash');
 
 var _lodash2 = _interopRequireDefault(_lodash);
 
+var _events = require('events');
+
+var _events2 = _interopRequireDefault(_events);
+
 var _fs = require('fs');
 
 var _fs2 = _interopRequireDefault(_fs);
@@ -26,6 +30,8 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
 
 function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+var noop = function noop() {};
 
 var streamify = function streamify(text) {
     var s = new _stream2.default.Readable();
@@ -84,14 +90,19 @@ var GCodeParser = function (_Transform) {
                 chunk = chunk.toString(encoding);
             }
 
-            var lines = stripComments(chunk).split(/\r\n|\r|\n/g);
+            var lines = (0, _lodash2.default)(chunk.split(/\r\n|\r|\n/g)).map(function (s) {
+                // Removes leading and trailing whitespace
+                return _lodash2.default.trim(s);
+            }).filter() // Removes empty strings from array
+            .value();
 
-            _lodash2.default.each(lines, function (line) {
-                var list = removeSpaces(line).match(/([a-zA-Z][0-9\+\-\.]*)|(\*[0-9]+)/igm) || [];
+            this.emit('progress', {
+                current: 0, // current progress value
+                total: lines.length // total progress value
+            });
 
-                if (list.length === 0) {
-                    return;
-                }
+            _lodash2.default.each(lines, function (line, index) {
+                var list = removeSpaces(stripComments(line)).match(/([a-zA-Z][0-9\+\-\.]*)|(\*[0-9]+)/igm) || [];
 
                 var n = undefined; // Line number
                 var cs = undefined; // Checksum
@@ -141,6 +152,11 @@ var GCodeParser = function (_Transform) {
                     obj.err = true; // checksum failed
                 }
 
+                _this2.emit('progress', {
+                    current: index + 1, // current progress value
+                    total: lines.length // total progress value
+                });
+
                 _this2.push(obj);
             });
 
@@ -156,16 +172,25 @@ var GCodeParser = function (_Transform) {
     return GCodeParser;
 }(_stream.Transform);
 
-var parseStream = function parseStream(stream, callback) {
-    callback = callback || function (err) {};
+var parseStream = function parseStream(stream) {
+    var callback = arguments.length <= 1 || arguments[1] === undefined ? noop : arguments[1];
+
+    var emitter = new _events2.default.EventEmitter();
 
     try {
         (function () {
             var results = [];
             stream.pipe(new GCodeParser()).on('data', function (data) {
+                emitter.emit('data', data);
                 results.push(data);
+            }).on('progress', function (_ref) {
+                var current = _ref.current;
+                var total = _ref.total;
+
+                emitter.emit('progress', { current: current, total: total });
             }).on('end', function () {
-                callback(null, results);
+                emitter.emit('end', results);
+                callback && callback(null, results);
             }).on('error', callback);
         })();
     } catch (err) {
@@ -173,18 +198,22 @@ var parseStream = function parseStream(stream, callback) {
         return;
     }
 
-    return stream;
+    return emitter;
 };
 
-var parseFile = function parseFile(file, callback) {
+var parseFile = function parseFile(file) {
+    var callback = arguments.length <= 1 || arguments[1] === undefined ? noop : arguments[1];
+
     file = file || '';
     var s = _fs2.default.createReadStream(file, { encoding: 'utf8' });
     s.on('error', callback);
     return parseStream(s, callback);
 };
 
-var parseString = function parseString(text, callback) {
-    var s = streamify(text);
+var parseString = function parseString(str) {
+    var callback = arguments.length <= 1 || arguments[1] === undefined ? noop : arguments[1];
+
+    var s = streamify(str);
     return parseStream(s, callback);
 };
 
