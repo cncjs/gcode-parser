@@ -1,6 +1,6 @@
 {
   "name": "gcode-parser",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "A G-code parser for Node.js",
   "author": "Cheton Wu <cheton@gmail.com>",
   "homepage": "https://github.com/cheton/gcode-parser",
@@ -17,7 +17,9 @@
     "gcode"
   ],
   "scripts": {
-    "test": "gulp && gulp test",
+    "prepublish": "npm run build && npm test",
+    "build": "gulp",
+    "test": "gulp test",
     "coverage": "istanbul cover node_modules/mocha/bin/_mocha -- --require babel-core/register -R spec",
     "coverage-clean": "rm -rf ./coverage",
     "coveralls": "cat ./coverage/lcov.info | ./node_modules/.bin/coveralls"
