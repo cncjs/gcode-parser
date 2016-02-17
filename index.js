@@ -145,8 +145,8 @@ const parseFile = (file, callback) => {
     return parseStream(s, callback);
 };
 
-const parseString = (text, callback) => {
-    let s = streamify(text);
+const parseString = (str, callback) => {
+    let s = streamify(str);
     return parseStream(s, callback);
 };
 
