@@ -177,38 +177,38 @@ describe('G-code Parser', (done) => {
                 {
                     N: 3,
                     cs: 57,
-                    line: 'N3 T0',
+                    line: 'N3 T0*57',
                     words: [['T', 0]]
                 },
                 {
                     N: 4,
                     cs: 67,
-                    line: 'N4 G92 E0',
+                    line: 'N4 G92 E0*67',
                     words: [['G', 92], ['E', 0]]
                 },
                 {
                     N: 5,
                     cs: 22,
-                    line: 'N5 G28',
+                    line: 'N5 G28*22',
                     words: [['G', 28]]
                 },
                 {
                     N: 6,
                     cs: 82,
-                    line: 'N6 G1 F1500.0',
+                    line: 'N6 G1 F1500.0*82',
                     words: [['G', 1], ['F', 1500]]
                 },
                 {
                     N: 7,
                     cs: 85,
-                    line: 'N7 G1 X2.0 Y2.0 F3000.0',
+                    line: 'N7 G1 X2.0 Y2.0 F3000.0*85',
                     words: [['G', 1], ['X', 2], ['Y', 2], ['F', 3000]]
                 },
                 {
                     err: true, // checksum failed
                     N: 8,
                     cs: 30, // invalid checksum
-                    line: 'N8 G1 X3.0 Y3.0',
+                    line: 'N8 G1 X3.0 Y3.0*30 ; checksum failed',
                     words: [['G', 1], ['X', 3], ['Y', 3]]
                 }
             ];
