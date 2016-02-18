@@ -46,11 +46,11 @@ const iterateWithDelay = (arr = [], opts = {}, iteratee = noop, done = noop) => 
         opts = {};
     }
 
-    opts.size = opts.size || arr.length;
+    opts.batchSize = opts.batchSize || arr.length;
     opts.delay = opts.delay || 0;
 
     const loop = (i = 0) => {
-        for (let count = 0; i < arr.length && count < opts.size; ++i, ++count) {
+        for (let count = 0; i < arr.length && count < opts.batchSize; ++i, ++count) {
             iteratee(arr[i], i, arr);
         }
         if (i < arr.length) {
@@ -66,8 +66,14 @@ class GCodeParser extends Transform {
 
     buffer = '';
 
+    // @param {object} [options] The options object
+    // @param {number} [options.batchSize] The batch size
+    // @param {number} [options.delay] The delay between iterations (in ms)
     constructor(options = {}) {
         super({ objectMode: true });
+
+        options.batchSize = options.batchSize || 0;
+        options.delay = options.delay || 0;
 
         this.options = options;
     }
@@ -156,11 +162,8 @@ class GCodeParser extends Transform {
             this.push(obj);
         };
 
-        const iterateOptions = {
-            size: this.options.size,
-            delay: this.options.delay
-        };
-        iterateWithDelay(lines, iterateOptions, iteratee, () => {
+        const { batchSize, delay } = this.options;
+        iterateWithDelay(lines, { batchSize, delay }, iteratee, () => {
             this.buffer = '';
             done();
         });
