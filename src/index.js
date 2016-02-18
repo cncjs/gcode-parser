@@ -26,8 +26,12 @@ const removeSpaces = (s) => {
 // The checksum "cs" for a GCode string "cmd" (including its line number) is computed
 // by exor-ing the bytes in the string up to and not including the * character.
 const computeChecksum = (s) => {
-    let cs = 0;
     s = s || '';
+    if (s.lastIndexOf('*') >= 0) {
+        s = s.substr(0, s.lastIndexOf('*'));
+    }
+
+    let cs = 0;
     for (let i = 0; i < s.length; ++i) {
         let c = s[i].charCodeAt(0);
         cs = cs ^ c;
@@ -35,13 +39,37 @@ const computeChecksum = (s) => {
     return cs;
 };
 
+const iterateWithDelay = (arr = [], opts = {}, iteratee = noop, done = noop) => {
+    if (typeof opts === 'function') {
+        done = iteratee;
+        iteratee = opts;
+        opts = {};
+    }
+
+    opts.size = opts.size || arr.length;
+    opts.delay = opts.delay || 0;
+
+    const loop = (i = 0) => {
+        for (let count = 0; i < arr.length && count < opts.size; ++i, ++count) {
+            iteratee(arr[i], i, arr);
+        }
+        if (i < arr.length) {
+            setTimeout(() => loop(i), opts.delay);
+            return;
+        }
+        done();
+    };
+    loop();
+};
+
 class GCodeParser extends Transform {
 
     buffer = '';
 
-    constructor(options) {
-        super(_.extend({}, options, { objectMode: true }));
-        this.options = options || {};
+    constructor(options = {}) {
+        super({ objectMode: true });
+
+        this.options = options;
     }
 
     _transform(chunk, encoding, next) {
@@ -73,7 +101,8 @@ class GCodeParser extends Transform {
             total: lines.length // total progress value
         });
 
-        _.each(lines, (line, index) => {
+        const iteratee = (value, index) => {
+            const line = value;
             const list = removeSpaces(stripComments(line))
                 .match(/([a-zA-Z][0-9\+\-\.]*)|(\*[0-9]+)/igm) || [];
 
@@ -109,14 +138,10 @@ class GCodeParser extends Transform {
                 words.push([letter, argument]);
             });
 
-            // Exclude * (Checksum) from the line
-            if (line.lastIndexOf('*') >= 0) {
-                line = line.substr(0, line.lastIndexOf('*'));
-            }
-
             let obj = {};
             obj.line = line;
             obj.words = words;
+
             (typeof(n) !== 'undefined') && (obj.N = n); // Line number
             (typeof(cs) !== 'undefined') && (obj.cs = cs); // Checksum
             if (obj.cs && (computeChecksum(line) !== obj.cs)) {
@@ -129,11 +154,16 @@ class GCodeParser extends Transform {
             });
 
             this.push(obj);
+        };
+
+        const iterateOptions = {
+            size: this.options.size,
+            delay: this.options.delay
+        };
+        iterateWithDelay(lines, iterateOptions, iteratee, () => {
+            this.buffer = '';
+            done();
         });
-
-        this.buffer = '';
-
-        done();
     }
 }
 
