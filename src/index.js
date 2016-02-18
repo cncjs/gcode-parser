@@ -36,6 +36,9 @@ const computeChecksum = (s) => {
 };
 
 class GCodeParser extends Transform {
+
+    buffer = '';
+
     constructor(options) {
         super(_.extend({}, options, { objectMode: true }));
         this.options = options || {};
@@ -52,7 +55,12 @@ class GCodeParser extends Transform {
             chunk = chunk.toString(encoding);
         }
 
-        const lines = _(chunk.split(/\r\n|\r|\n/g))
+        this.buffer += chunk;
+
+        next();
+    }
+    _flush(done) {
+        const lines = _(this.buffer.split(/\r\n|\r|\n/g))
             .map((s) => {
                 // Removes leading and trailing whitespace
                 return _.trim(s);
@@ -123,9 +131,8 @@ class GCodeParser extends Transform {
             this.push(obj);
         });
 
-        next();
-    }
-    _flush(done) {
+        this.buffer = '';
+
         done();
     }
 }
