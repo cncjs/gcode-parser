@@ -1,6 +1,7 @@
 import _ from 'lodash';
 import events from 'events';
 import fs from 'fs';
+import timers from 'timers';
 import stream, { Transform } from 'stream';
 
 const noop = () => {};
@@ -20,14 +21,22 @@ const stripComments = (s) => {
 
 const removeSpaces = (s) => {
     return s.replace(/\s+/g, '');
-}
+};
+
+const containsNewline = (s) => {
+    return !!s.match(/.*(?:\r\n|\r|\n)/g);
+};
 
 // http://reprap.org/wiki/G-code#Special_fields
 // The checksum "cs" for a GCode string "cmd" (including its line number) is computed
 // by exor-ing the bytes in the string up to and not including the * character.
 const computeChecksum = (s) => {
-    let cs = 0;
     s = s || '';
+    if (s.lastIndexOf('*') >= 0) {
+        s = s.substr(0, s.lastIndexOf('*'));
+    }
+
+    let cs = 0;
     for (let i = 0; i < s.length; ++i) {
         let c = s[i].charCodeAt(0);
         cs = cs ^ c;
@@ -35,13 +44,157 @@ const computeChecksum = (s) => {
     return cs;
 };
 
-class GCodeParser extends Transform {
+// @param {array} arr The array to iterate over
+// @param {object} opts The options object
+// @param {function} iteratee The iteratee invoked per element
+// @param {function} done The done invoked after the loop has finished
+const iterateArray = (arr = [], opts = {}, iteratee = noop, done = noop) => {
+    if (typeof opts === 'function') {
+        done = iteratee;
+        iteratee = opts;
+        opts = {};
+    }
 
-    buffer = '';
+    opts.batchSize = opts.batchSize || 1;
 
-    constructor(options) {
-        super(_.extend({}, options, { objectMode: true }));
-        this.options = options || {};
+    const loop = (i = 0) => {
+        for (let count = 0; i < arr.length && count < opts.batchSize; ++i, ++count) {
+            iteratee(arr[i], i, arr);
+        }
+        if (i < arr.length) {
+            timers.setImmediate(() => loop(i));
+            return;
+        }
+        done();
+    };
+    loop();
+};
+
+// @param {string} line The G-code line
+const parseLine = (line) => {
+    let n; // Line number
+    let cs; // Checksum
+    let words = [];
+    let list = removeSpaces(stripComments(line))
+        .match(/([a-zA-Z][0-9\+\-\.]*)|(\*[0-9]+)/igm) || [];
+
+    _.each(list, (word) => {
+        let letter = word[0].toUpperCase();
+        let argument = word.substr(1);
+
+        argument = _.isNaN(parseFloat(argument)) ? argument : Number(argument);
+
+        //
+        // Special fields
+        //
+
+        { // N: Line number
+            if (letter === 'N' && _.isUndefined(n)) {
+                // Line (block) number in program
+                n = Number(argument);
+                return;
+            }
+        }
+
+        { // *: Checksum
+            if (letter === '*' && _.isUndefined(cs)) {
+                cs = Number(argument);
+                return;
+            }
+        }
+
+        words.push([letter, argument]);
+    });
+
+    let result = {};
+    result.line = line;
+    result.words = words;
+
+    (typeof(n) !== 'undefined') && (result.N = n); // Line number
+    (typeof(cs) !== 'undefined') && (result.cs = cs); // Checksum
+    if (result.cs && (computeChecksum(line) !== result.cs)) {
+        result.err = true; // checksum failed
+    }
+
+    return result;
+};
+
+// @param {object} stream The G-code line stream
+// @param {options} options The options object
+// @param {function} callback The callback function
+const parseStream = (stream, options, callback = noop) => {
+    if (typeof options === 'function') {
+        callback = options;
+        options = {};
+    }
+
+    const emitter = new events.EventEmitter();
+
+    try {
+        let results = [];
+        stream
+            .pipe(new GCodeLineStream(options))
+            .on('data', (data) => {
+                emitter.emit('data', data);
+                results.push(data);
+            })
+            .on('end', () => {
+                emitter.emit('end', results);
+                callback && callback(null, results);
+            })
+            .on('error', callback);
+    }
+    catch(err) {
+        callback(err);
+    }
+
+    return emitter;
+};
+
+// @param {string} file The G-code path name
+// @param {options} options The options object
+// @param {function} callback The callback function
+const parseFile = (file, options, callback = noop) => {
+    if (typeof options === 'function') {
+        callback = options;
+        options = {};
+    }
+    file = file || '';
+    let s = fs.createReadStream(file, { encoding: 'utf8' });
+    s.on('error', callback);
+    return parseStream(s, options, callback);
+};
+
+// @param {string} str The G-code text string
+// @param {options} options The options object
+// @param {function} callback The callback function
+const parseString = (str, options, callback = noop) => {
+    if (typeof options === 'function') {
+        callback = options;
+        options = {};
+    }
+    let s = streamify(str);
+    return parseStream(s, options, callback);
+};
+
+class GCodeLineStream extends Transform {
+    state = {
+        lineCount: 0,
+        lastChunkEndedWithCR: false,
+    };
+    options = {
+        batchSize: 1000,
+        delay: 0
+    };
+    lineBuffer = '';
+
+    // @param {object} [options] The options object
+    // @param {number} [options.batchSize] The batch size
+    // @param {number} [options.delay] The delay between iterations (in ms)
+    constructor(options = {}) {
+        super({ objectMode: true });
+
+        this.options = _.extend({}, this.options, options);
     }
 
     _transform(chunk, encoding, next) {
@@ -55,129 +208,55 @@ class GCodeParser extends Transform {
             chunk = chunk.toString(encoding);
         }
 
-        this.buffer += chunk;
+        this.lineBuffer += chunk;
 
-        next();
+        if (!containsNewline(chunk)) {
+            next();
+            return;
+        }
+
+        let lines = this.lineBuffer.match(/.*(?:\r\n|\r|\n)|.+$/g);
+        if (!lines || lines.length === 0) {
+            next();
+            return;
+        }
+
+        // Do not split CRLF which spans chunks
+        if (this.state.lastChunkEndedWithCR && lines[0] === '\n') {
+            lines.shift();
+        }
+
+        this.state.lastChunkEndedWithCR = this.lineBuffer.endsWith('\r');
+
+        if (this.lineBuffer.endsWith('\r') || this.lineBuffer.endsWith('\n')) {
+            this.lineBuffer = '';
+        } else {
+            let line = lines.pop(lines) || '';
+            this.lineBuffer = line;
+        }
+
+        iterateArray(lines, (line, key) => {
+            let result = parseLine(_.trimEnd(line));
+            this.push(result);
+        }, next);
     }
     _flush(done) {
-        const lines = _(this.buffer.split(/\r\n|\r|\n/g))
-            .map((s) => {
-                // Removes leading and trailing whitespace
-                return _.trim(s);
-            })
-            .filter() // Removes empty strings from array
-            .value();
+        if (this.lineBuffer) {
+            let line = _.trimEnd(this.lineBuffer);
+            let result = parseLine(line);
+            this.push(result);
 
-        this.emit('progress', {
-            current: 0, // current progress value
-            total: lines.length // total progress value
-        });
-
-        _.each(lines, (line, index) => {
-            const list = removeSpaces(stripComments(line))
-                .match(/([a-zA-Z][0-9\+\-\.]*)|(\*[0-9]+)/igm) || [];
-
-            let n; // Line number
-            let cs; // Checksum
-            let words = [];
-
-            _.each(list, (word) => {
-                let letter = word[0].toUpperCase();
-                let argument = word.substr(1);
-
-                argument = _.isNaN(parseFloat(argument)) ? argument : Number(argument);
-
-                //
-                // Special fields
-                //
-
-                { // N: Line number
-                    if (letter === 'N' && _.isUndefined(n)) {
-                        // Line (block) number in program
-                        n = Number(argument);
-                        return;
-                    }
-                }
-
-                { // *: Checksum
-                    if (letter === '*' && _.isUndefined(cs)) {
-                        cs = Number(argument);
-                        return;
-                    }
-                }
-
-                words.push([letter, argument]);
-            });
-
-            // Exclude * (Checksum) from the line
-            if (line.lastIndexOf('*') >= 0) {
-                line = line.substr(0, line.lastIndexOf('*'));
-            }
-
-            let obj = {};
-            obj.line = line;
-            obj.words = words;
-            (typeof(n) !== 'undefined') && (obj.N = n); // Line number
-            (typeof(cs) !== 'undefined') && (obj.cs = cs); // Checksum
-            if (obj.cs && (computeChecksum(line) !== obj.cs)) {
-                obj.err = true; // checksum failed
-            }
-
-            this.emit('progress', {
-                current: index + 1, // current progress value
-                total: lines.length // total progress value
-            });
-
-            this.push(obj);
-        });
-
-        this.buffer = '';
+            this.lineBuffer = '';
+            this.state.lastChunkEndedWithCR = false;
+        }
 
         done();
     }
 }
 
-const parseStream = (stream, callback = noop) => {
-    const emitter = new events.EventEmitter();
-
-    try {
-        let results = [];
-        stream.pipe(new GCodeParser())
-            .on('data', (data) => {
-                emitter.emit('data', data);
-                results.push(data);
-            })
-            .on('progress', ({ current, total }) => {
-                emitter.emit('progress', { current, total });
-            })
-            .on('end', () => {
-                emitter.emit('end', results);
-                callback && callback(null, results);
-            })
-            .on('error', callback);
-    }
-    catch(err) {
-        callback(err);
-        return;
-    }
-
-    return emitter;
-};
-
-const parseFile = (file, callback = noop) => {
-    file = file || '';
-    let s = fs.createReadStream(file, { encoding: 'utf8' });
-    s.on('error', callback);
-    return parseStream(s, callback);
-};
-
-const parseString = (str, callback = noop) => {
-    let s = streamify(str);
-    return parseStream(s, callback);
-};
-
 export {
-    GCodeParser,
+    GCodeLineStream,
+    parseLine,
     parseStream,
     parseFile,
     parseString

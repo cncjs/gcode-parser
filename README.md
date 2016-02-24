@@ -10,6 +10,11 @@
 var fs = require('fs');
 var parser = require('gcode-parser');
 
+// Parse from line
+var line = 'G0 X0 Y0';
+var result = parser.parseLine(line);
+console.log(result);
+
 // Parse from file
 var file = 'example.nc';
 parser.parseFile(file, function(err, results) {

@@ -39,7 +39,7 @@ describe('G-code Parser', (done) => {
     });
 
     describe('Contains only comments', (done) => {
-        it('should get empty results.', (done) => {
+        it('should be 11 lines.', (done) => {
             let sampleText = [
                 ';',
                 '; Operation:    0',
@@ -55,7 +55,7 @@ describe('G-code Parser', (done) => {
             ].join('\n');
 
             parseString(sampleText, (err, results) => {
-                expect(results.length).to.be.equal(10);
+                expect(results.length).to.be.equal(11);
                 done();
             });
         });
@@ -71,9 +71,23 @@ describe('G-code Parser', (done) => {
         });
     });
 
-    describe('EventEmitter', (done) => {
-        it('should call event listeners.', (done) => {
-            let index = 0;
+    describe('Event listeners', (done) => {
+        it('should call event listeners when loading G-code from file.', (done) => {
+            const file = 'test/fixtures/circle.gcode';
+
+            parseFile(file, (err, results) => {
+                expect(results.length).to.be.equal(7);
+                done();
+            })
+            .on('data', (data) => {
+                expect(data).to.be.an('object');
+            })
+            .on('end', (results) => {
+                expect(results).to.be.an('array');
+                expect(results.length).to.be.equal(7);
+            });
+        });
+        it('should call event listeners when loading G-code from stream.', (done) => {
             const stream = fs.createReadStream('test/fixtures/circle.gcode', { encoding: 'utf8' });
 
             parseStream(stream, (err, results) => {
@@ -83,13 +97,24 @@ describe('G-code Parser', (done) => {
             .on('data', (data) => {
                 expect(data).to.be.an('object');
             })
-            .on('progress', ({ current, total }) => {
-                expect(current).to.be.equal(index);
-                expect(total).to.be.equal(7);
-                ++index;
+            .on('end', (results) => {
+                expect(results).to.be.an('array');
+                expect(results.length).to.be.equal(7);
+            });
+        });
+        it('should call event listeners when loading G-code from string.', (done) => {
+            const string = fs.readFileSync('test/fixtures/circle.gcode', 'utf8');
+
+            parseString(string, (err, results) => {
+                expect(results.length).to.be.equal(7);
+                done();
+            })
+            .on('data', (data) => {
+                expect(data).to.be.an('object');
             })
             .on('end', (results) => {
                 expect(results).to.be.an('array');
+                expect(results.length).to.be.equal(7);
             });
         });
     });
@@ -177,38 +202,38 @@ describe('G-code Parser', (done) => {
                 {
                     N: 3,
                     cs: 57,
-                    line: 'N3 T0',
+                    line: 'N3 T0*57',
                     words: [['T', 0]]
                 },
                 {
                     N: 4,
                     cs: 67,
-                    line: 'N4 G92 E0',
+                    line: 'N4 G92 E0*67',
                     words: [['G', 92], ['E', 0]]
                 },
                 {
                     N: 5,
                     cs: 22,
-                    line: 'N5 G28',
+                    line: 'N5 G28*22',
                     words: [['G', 28]]
                 },
                 {
                     N: 6,
                     cs: 82,
-                    line: 'N6 G1 F1500.0',
+                    line: 'N6 G1 F1500.0*82',
                     words: [['G', 1], ['F', 1500]]
                 },
                 {
                     N: 7,
                     cs: 85,
-                    line: 'N7 G1 X2.0 Y2.0 F3000.0',
+                    line: 'N7 G1 X2.0 Y2.0 F3000.0*85',
                     words: [['G', 1], ['X', 2], ['Y', 2], ['F', 3000]]
                 },
                 {
                     err: true, // checksum failed
                     N: 8,
                     cs: 30, // invalid checksum
-                    line: 'N8 G1 X3.0 Y3.0',
+                    line: 'N8 G1 X3.0 Y3.0*30 ; checksum failed',
                     words: [['G', 1], ['X', 3], ['Y', 3]]
                 }
             ];
