@@ -236,15 +236,20 @@ class GCodeLineStream extends Transform {
         }
 
         iterateArray(lines, (line, key) => {
-            let result = parseLine(_.trimEnd(line));
-            this.push(result);
+            line = _.trimEnd(line);
+            if (line.length > 0) {
+                let result = parseLine(line);
+                this.push(result);
+            }
         }, next);
     }
     _flush(done) {
         if (this.lineBuffer) {
             let line = _.trimEnd(this.lineBuffer);
-            let result = parseLine(line);
-            this.push(result);
+            if (line.length > 0) {
+                let result = parseLine(line);
+                this.push(result);
+            }
 
             this.lineBuffer = '';
             this.state.lastChunkEndedWithCR = false;
