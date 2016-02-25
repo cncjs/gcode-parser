@@ -39,7 +39,7 @@ describe('G-code Parser', (done) => {
     });
 
     describe('Contains only comments', (done) => {
-        it('should be 11 lines.', (done) => {
+        it('should be 10 non-empty lines.', (done) => {
             let sampleText = [
                 ';',
                 '; Operation:    0',
@@ -51,11 +51,11 @@ describe('G-code Parser', (done) => {
                 '; Pass Depth:   1.9999999999999998',
                 '; Plunge rate:  127',
                 '; Cut rate:     1016',
-                '  ' // empty line
+                '  ' // skip empty line
             ].join('\n');
 
             parseString(sampleText, (err, results) => {
-                expect(results.length).to.be.equal(11);
+                expect(results.length).to.be.equal(10);
                 done();
             });
         });
