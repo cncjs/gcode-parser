@@ -36,6 +36,7 @@ parser.parseString(str, function(err, results) {
 
 ## Advanced Usage
 ```js
+var _ = require('lodash');
 var parser = require('gcode-parser');
 
 parser.parseFile('example.nc', function(err, results) {
@@ -43,7 +44,18 @@ parser.parseFile('example.nc', function(err, results) {
         console.error(err);
         return;
     }
-    console.log(results);
+
+    // Compose G-code
+    var list = _(results)
+        .map('words')
+        .map(function(words) {
+            return _.map(words, function(word) {
+                return word[0] + word[1];
+            }).join(' ');
+        })
+        .value();
+
+    console.log(list);
 })
 .on('data', function(data) {
     console.log(data);
