@@ -226,9 +226,9 @@ class GCodeLineStream extends Transform {
             lines.shift();
         }
 
-        this.state.lastChunkEndedWithCR = this.lineBuffer.endsWith('\r');
+        this.state.lastChunkEndedWithCR = _.endsWith(this.lineBuffer, '\r');
 
-        if (this.lineBuffer.endsWith('\r') || this.lineBuffer.endsWith('\n')) {
+        if (_.endsWith(this.lineBuffer, '\r') || _.endsWith(this.lineBuffer, '\n')) {
             this.lineBuffer = '';
         } else {
             let line = lines.pop(lines) || '';
