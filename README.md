@@ -60,9 +60,6 @@ parser.parseFile('example.nc', function(err, results) {
 .on('data', function(data) {
     console.log(data);
 })
-.on('progress', function(o) {
-    console.log(o.current, o.total);
-})
 .on('end', function(results) {
     console.log(results);
 })
