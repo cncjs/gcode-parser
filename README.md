@@ -64,6 +64,8 @@ parser.parseFile('example.nc', function(err, results) {
     console.log(results);
 })
 ```
+## G-code Interpreter
+https://github.com/cheton/gcode-interpreter
 
-## Toolpath Generator
-Check out [gcode-toolpath](https://github.com/cheton/gcode-toolpath) for an example.
+## G-code Toolpath
+https://github.com/cheton/gcode-toolpath
