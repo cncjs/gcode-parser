@@ -1,5 +1,6 @@
 # gcode-parser [![build status](https://travis-ci.org/cheton/gcode-parser.svg?branch=master)](https://travis-ci.org/cheton/gcode-parser) [![Coverage Status](https://coveralls.io/repos/cheton/gcode-parser/badge.svg?branch=master&service=github)](https://coveralls.io/github/cheton/gcode-parser?branch=master)
-[![NPM](https://nodei.co/npm/gcode-parser.png?downloads=true&stars=true)](https://nodei.co/npm/gcode-parser/)
+
+[![NPM](https://nodei.co/npm/gcode-parser.png?downloads=true&stars=true)](https://www.npmjs.com/package/gcode-parser)
 
 ## Install
 
