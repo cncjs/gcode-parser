@@ -72,4 +72,4 @@ https://github.com/cheton/gcode-interpreter
 https://github.com/cheton/gcode-toolpath
 
 ## G-code Toolpath Visualizer
-Check out the source code at https://github.com/cheton/cnc/blob/master/src/web/components/widgets/visualizer/GCodeVisualizer.js
+Check out the source code at https://github.com/cheton/cnc/blob/master/src/web/widgets/Visualizer/GCodeVisualizer.js
