@@ -42,7 +42,7 @@ describe('G-code Parser', (done) => {
         it('should not parse G-code commands.', (done) => {
             const file = 'test/fixtures/circle.gcode';
 
-            parseFile(file, { lineOnly: true }, (err, results) => {
+            parseFile(file, { noParseLine: true }, (err, results) => {
                 expect(results.length).to.be.equal(7);
                 done();
             })

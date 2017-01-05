@@ -73,13 +73,13 @@ const iterateArray = (arr = [], opts = {}, iteratee = noop, done = noop) => {
 // @param {string} line The G-code line
 const parseLine = (line, options) => {
     options = options || {};
-    options.lineOnly = options.lineOnly || false;
+    options.noParseLine = options.noParseLine || false;
 
     const result = {
         line: line
     };
 
-    if (!options.lineOnly) {
+    if (!options.noParseLine) {
         let n; // Line number
         let cs; // Checksum
         const words = [];
@@ -190,13 +190,13 @@ class GCodeLineStream extends Transform {
     };
     options = {
         batchSize: 1000,
-        lineOnly: false
+        noParseLine: false
     };
     lineBuffer = '';
 
     // @param {object} [options] The options object
     // @param {number} [options.batchSize] The batch size.
-    // @param {boolean} [options.lineOnly] True to contain only lines, false otherwise.
+    // @param {boolean} [options.noParseLine] True to not parse line, false otherwise.
     constructor(options = {}) {
         super({ objectMode: true });
 
@@ -247,7 +247,7 @@ class GCodeLineStream extends Transform {
         iterateArray(lines, { batchSize: this.options.batchSize }, (line, key) => {
             line = _.trimEnd(line);
             if (line.length > 0) {
-                const result = parseLine(line, { lineOnly: this.options.lineOnly });
+                const result = parseLine(line, { noParseLine: this.options.noParseLine });
                 this.push(result);
             }
         }, next);
@@ -256,7 +256,7 @@ class GCodeLineStream extends Transform {
         if (this.lineBuffer) {
             const line = _.trimEnd(this.lineBuffer);
             if (line.length > 0) {
-                const result = parseLine(line, { lineOnly: this.options.lineOnly });
+                const result = parseLine(line, { noParseLine: this.options.noParseLine });
                 this.push(result);
             }
 

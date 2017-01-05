@@ -75,15 +75,15 @@ Default: `1000`
 
 The batch size.
 
-### lineOnly
+### noParseLine
 
 Type: `Boolean`
 Default: `false`
 
-True to include only lines, false otherwise.
+True to not parse line, false otherwise.
 
 ```js
-parser.parseFile('/path/to/file', { lineOnly: true }, function(err, results) {
+parser.parseFile('/path/to/file', { noParseLine: true }, function(err, results) {
 });
 ```
 
