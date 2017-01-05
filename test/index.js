@@ -38,6 +38,26 @@ describe('G-code Parser', (done) => {
         });
     });
 
+    describe('Contains only lines', (done) => {
+        it('should not parse G-code commands.', (done) => {
+            const file = 'test/fixtures/circle.gcode';
+
+            parseFile(file, { lineOnly: true }, (err, results) => {
+                expect(results.length).to.be.equal(7);
+                done();
+            })
+            .on('data', (data) => {
+                expect(data).to.be.an('object');
+                expect(data.line).to.be.an('string');
+                expect(data.words).to.be.undefined;
+            })
+            .on('end', (results) => {
+                expect(results).to.be.an('array');
+                expect(results.length).to.be.equal(7);
+            });
+        });
+    });
+
     describe('Contains only comments', (done) => {
         it('should be 10 non-empty lines.', (done) => {
             let sampleText = [
