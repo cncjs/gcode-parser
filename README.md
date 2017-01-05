@@ -65,6 +65,28 @@ parser.parseFile('example.nc', function(err, results) {
     console.log(results);
 })
 ```
+
+## Options
+
+### batchSize
+
+Type: `Number`
+Default: `1000`
+
+The batch size.
+
+### lineOnly
+
+Type: `Boolean`
+Default: `false`
+
+True to include only lines, false otherwise.
+
+```js
+parser.parseFile('/path/to/file', { lineOnly: true }, function(err, results) {
+});
+```
+
 ## G-code Interpreter
 https://github.com/cheton/gcode-interpreter
 

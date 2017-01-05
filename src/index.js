@@ -71,49 +71,55 @@ const iterateArray = (arr = [], opts = {}, iteratee = noop, done = noop) => {
 };
 
 // @param {string} line The G-code line
-const parseLine = (line) => {
-    let n; // Line number
-    let cs; // Checksum
-    let words = [];
-    let list = removeSpaces(stripComments(line))
-        .match(/([a-zA-Z][0-9\+\-\.]*)|(\*[0-9]+)/igm) || [];
+const parseLine = (line, options) => {
+    options = options || {};
+    options.lineOnly = options.lineOnly || false;
 
-    _.each(list, (word) => {
-        let letter = word[0].toUpperCase();
-        let argument = word.substr(1);
+    const result = {
+        line: line
+    };
 
-        argument = _.isNaN(parseFloat(argument)) ? argument : Number(argument);
+    if (!options.lineOnly) {
+        let n; // Line number
+        let cs; // Checksum
+        const words = [];
+        const list = removeSpaces(stripComments(line))
+            .match(/([a-zA-Z][0-9\+\-\.]*)|(\*[0-9]+)/igm) || [];
+        _.each(list, (word) => {
+            let letter = word[0].toUpperCase();
+            let argument = word.substr(1);
 
-        //
-        // Special fields
-        //
+            argument = _.isNaN(parseFloat(argument)) ? argument : Number(argument);
 
-        { // N: Line number
-            if (letter === 'N' && _.isUndefined(n)) {
-                // Line (block) number in program
-                n = Number(argument);
-                return;
+            //
+            // Special fields
+            //
+
+            { // N: Line number
+                if (letter === 'N' && _.isUndefined(n)) {
+                    // Line (block) number in program
+                    n = Number(argument);
+                    return;
+                }
             }
-        }
 
-        { // *: Checksum
-            if (letter === '*' && _.isUndefined(cs)) {
-                cs = Number(argument);
-                return;
+            { // *: Checksum
+                if (letter === '*' && _.isUndefined(cs)) {
+                    cs = Number(argument);
+                    return;
+                }
             }
+
+            words.push([letter, argument]);
+        });
+
+        result.words = words;
+
+        (typeof(n) !== 'undefined') && (result.N = n); // Line number
+        (typeof(cs) !== 'undefined') && (result.cs = cs); // Checksum
+        if (result.cs && (computeChecksum(line) !== result.cs)) {
+            result.err = true; // checksum failed
         }
-
-        words.push([letter, argument]);
-    });
-
-    let result = {};
-    result.line = line;
-    result.words = words;
-
-    (typeof(n) !== 'undefined') && (result.N = n); // Line number
-    (typeof(cs) !== 'undefined') && (result.cs = cs); // Checksum
-    if (result.cs && (computeChecksum(line) !== result.cs)) {
-        result.err = true; // checksum failed
     }
 
     return result;
@@ -184,17 +190,20 @@ class GCodeLineStream extends Transform {
     };
     options = {
         batchSize: 1000,
-        delay: 0
+        lineOnly: false
     };
     lineBuffer = '';
 
     // @param {object} [options] The options object
-    // @param {number} [options.batchSize] The batch size
-    // @param {number} [options.delay] The delay between iterations (in ms)
+    // @param {number} [options.batchSize] The batch size.
+    // @param {boolean} [options.lineOnly] True to contain only lines, false otherwise.
     constructor(options = {}) {
         super({ objectMode: true });
 
-        this.options = _.extend({}, this.options, options);
+        this.options = {
+            ...this.options,
+            ...options
+        };
     }
 
     _transform(chunk, encoding, next) {
@@ -235,19 +244,19 @@ class GCodeLineStream extends Transform {
             this.lineBuffer = line;
         }
 
-        iterateArray(lines, (line, key) => {
+        iterateArray(lines, { batchSize: this.options.batchSize }, (line, key) => {
             line = _.trimEnd(line);
             if (line.length > 0) {
-                let result = parseLine(line);
+                const result = parseLine(line, { lineOnly: this.options.lineOnly });
                 this.push(result);
             }
         }, next);
     }
     _flush(done) {
         if (this.lineBuffer) {
-            let line = _.trimEnd(this.lineBuffer);
+            const line = _.trimEnd(this.lineBuffer);
             if (line.length > 0) {
-                let result = parseLine(line);
+                const result = parseLine(line, { lineOnly: this.options.lineOnly });
                 this.push(result);
             }
 

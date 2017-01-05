@@ -22,7 +22,7 @@ gulp.task('test', ['pre-test'], () => {
         .pipe(istanbul.enforceThresholds({
             thresholds: {
                 global: {
-                    statements: 90,
+                    statements: 85,
                     branches: 70,
                     functions: 90,
                     lines: 90
