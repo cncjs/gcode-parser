@@ -1,4 +1,3 @@
-import _ from 'lodash';
 import events from 'events';
 import fs from 'fs';
 import timers from 'timers';
@@ -7,47 +6,22 @@ import stream, { Transform } from 'stream';
 const noop = () => {};
 
 const streamify = (text) => {
-    let s = new stream.Readable();
+    const s = new stream.Readable();
     s.push(text);
     s.push(null);
     return s;
 };
 
-const stripComments = (s) => {
-    const re1 = /\s*[%#;].*/g; // Strip everything after %, #, or ; to the end of the line, including preceding spaces
-    const re2 = /\s*\(.*\)/g; // Remove anything inside the parentheses
-    return s.replace(re1, '').replace(re2, '');
-};
+const containsLineEnd = (() => {
+    const re = new RegExp(/.*(?:\r\n|\r|\n)/g);
 
-const removeSpaces = (s) => {
-    return s.replace(/\s+/g, '');
-};
+    return (s => !!s.match(re));
+})();
 
-const containsNewline = (s) => {
-    return !!s.match(/.*(?:\r\n|\r|\n)/g);
-};
-
-// http://reprap.org/wiki/G-code#Special_fields
-// The checksum "cs" for a GCode string "cmd" (including its line number) is computed
-// by exor-ing the bytes in the string up to and not including the * character.
-const computeChecksum = (s) => {
-    s = s || '';
-    if (s.lastIndexOf('*') >= 0) {
-        s = s.substr(0, s.lastIndexOf('*'));
-    }
-
-    let cs = 0;
-    for (let i = 0; i < s.length; ++i) {
-        let c = s[i].charCodeAt(0);
-        cs = cs ^ c;
-    }
-    return cs;
-};
-
-// @param {array} arr The array to iterate over
-// @param {object} opts The options object
-// @param {function} iteratee The iteratee invoked per element
-// @param {function} done The done invoked after the loop has finished
+// @param {array} arr The array to iterate over.
+// @param {object} opts The options object.
+// @param {function} iteratee The iteratee invoked per element.
+// @param {function} done The done invoked after the loop has finished.
 const iterateArray = (arr = [], opts = {}, iteratee = noop, done = noop) => {
     if (typeof opts === 'function') {
         done = iteratee;
@@ -71,59 +45,83 @@ const iterateArray = (arr = [], opts = {}, iteratee = noop, done = noop) => {
 };
 
 // @param {string} line The G-code line
-const parseLine = (line, options) => {
-    options = options || {};
-    options.noParseLine = options.noParseLine || false;
-
-    const result = {
-        line: line
-    };
-
-    if (!options.noParseLine) {
-        let n; // Line number
-        let cs; // Checksum
-        const words = [];
-        const list = removeSpaces(stripComments(line))
-            .match(/([a-zA-Z][0-9\+\-\.]*)|(\*[0-9]+)/igm) || [];
-        _.each(list, (word) => {
-            let letter = word[0].toUpperCase();
-            let argument = word.substr(1);
-
-            argument = _.isNaN(parseFloat(argument)) ? argument : Number(argument);
-
-            //
-            // Special fields
-            //
-
-            { // N: Line number
-                if (letter === 'N' && _.isUndefined(n)) {
-                    // Line (block) number in program
-                    n = Number(argument);
-                    return;
-                }
-            }
-
-            { // *: Checksum
-                if (letter === '*' && _.isUndefined(cs)) {
-                    cs = Number(argument);
-                    return;
-                }
-            }
-
-            words.push([letter, argument]);
-        });
-
-        result.words = words;
-
-        (typeof(n) !== 'undefined') && (result.N = n); // Line number
-        (typeof(cs) !== 'undefined') && (result.cs = cs); // Checksum
-        if (result.cs && (computeChecksum(line) !== result.cs)) {
-            result.err = true; // checksum failed
+const parseLine = (() => {
+    // http://reprap.org/wiki/G-code#Special_fields
+    // The checksum "cs" for a GCode string "cmd" (including its line number) is computed
+    // by exor-ing the bytes in the string up to and not including the * character.
+    const computeChecksum = (s) => {
+        s = s || '';
+        if (s.lastIndexOf('*') >= 0) {
+            s = s.substr(0, s.lastIndexOf('*'));
         }
-    }
 
-    return result;
-};
+        let cs = 0;
+        for (let i = 0; i < s.length; ++i) {
+            const c = s[i].charCodeAt(0);
+            cs = cs ^ c;
+        }
+        return cs;
+    };
+    const stripLine = (() => {
+        const re1 = new RegExp(/\s*[%#;].*/g); // Strip everything after %, #, or ; to the end of the line, including preceding spaces
+        const re2 = new RegExp(/\s*\(.*\)/g); // Remove anything inside the parentheses
+        const re3 = new RegExp(/\s+/g);
+
+        return (s => s.replace(re1, '').replace(re2, '').replace(re3, ''));
+    })();
+    const re = /([a-zA-Z][0-9\+\-\.]*)|(\*[0-9]+)/igm;
+
+    return (line, options) => {
+        options = options || {};
+        options.noParseLine = options.noParseLine || false;
+
+        const result = {
+            line: line
+        };
+
+        if (!options.noParseLine) {
+            result.words = [];
+
+            let ln; // Line number
+            let cs; // Checksum
+            const words = stripLine(line).match(re) || [];
+            for (let i = 0; i < words.length; ++i) {
+                const word = words[i];
+                const letter = word[0].toUpperCase();
+                const argument = word.slice(1);
+
+                //
+                // Special fields
+                //
+
+                { // N: Line number
+                    if (letter === 'N' && typeof ln === 'undefined') {
+                        // Line (block) number in program
+                        ln = Number(argument);
+                        continue;
+                    }
+                }
+
+                { // *: Checksum
+                    if (letter === '*' && typeof cs === 'undefined') {
+                        cs = Number(argument);
+                        continue;
+                    }
+                }
+
+                result.words.push([letter, Number(argument)]);
+            }
+
+            (typeof(ln) !== 'undefined') && (result.ln = ln); // Line number
+            (typeof(cs) !== 'undefined') && (result.cs = cs); // Checksum
+            if (result.cs && (computeChecksum(line) !== result.cs)) {
+                result.err = true; // checksum failed
+            }
+        }
+
+        return result;
+    };
+})();
 
 // @param {object} stream The G-code line stream
 // @param {options} options The options object
@@ -137,7 +135,7 @@ const parseStream = (stream, options, callback = noop) => {
     const emitter = new events.EventEmitter();
 
     try {
-        let results = [];
+        const results = [];
         stream
             .pipe(new GCodeLineStream(options))
             .on('data', (data) => {
@@ -149,8 +147,7 @@ const parseStream = (stream, options, callback = noop) => {
                 callback && callback(null, results);
             })
             .on('error', callback);
-    }
-    catch(err) {
+    } catch (err) {
         callback(err);
     }
 
@@ -179,8 +176,7 @@ const parseString = (str, options, callback = noop) => {
         callback = options;
         options = {};
     }
-    let s = streamify(str);
-    return parseStream(s, options, callback);
+    return parseStream(streamify(str), options, callback);
 };
 
 class GCodeLineStream extends Transform {
@@ -193,6 +189,7 @@ class GCodeLineStream extends Transform {
         noParseLine: false
     };
     lineBuffer = '';
+    re = new RegExp(/.*(?:\r\n|\r|\n)|.+$/g);
 
     // @param {object} [options] The options object
     // @param {number} [options.batchSize] The batch size.
@@ -219,12 +216,12 @@ class GCodeLineStream extends Transform {
 
         this.lineBuffer += chunk;
 
-        if (!containsNewline(chunk)) {
+        if (!containsLineEnd(chunk)) {
             next();
             return;
         }
 
-        let lines = this.lineBuffer.match(/.*(?:\r\n|\r|\n)|.+$/g);
+        const lines = this.lineBuffer.match(this.re);
         if (!lines || lines.length === 0) {
             next();
             return;
@@ -235,28 +232,33 @@ class GCodeLineStream extends Transform {
             lines.shift();
         }
 
-        this.state.lastChunkEndedWithCR = _.endsWith(this.lineBuffer, '\r');
+        this.state.lastChunkEndedWithCR = (this.lineBuffer[this.lineBuffer.length - 1] === '\r');
 
-        if (_.endsWith(this.lineBuffer, '\r') || _.endsWith(this.lineBuffer, '\n')) {
+        if ((this.lineBuffer[this.lineBuffer.length - 1] === '\r') ||
+            (this.lineBuffer[this.lineBuffer.length - 1] === '\n')) {
             this.lineBuffer = '';
         } else {
-            let line = lines.pop(lines) || '';
+            const line = lines.pop() || '';
             this.lineBuffer = line;
         }
 
         iterateArray(lines, { batchSize: this.options.batchSize }, (line, key) => {
-            line = _.trimEnd(line);
+            line = line.trim();
             if (line.length > 0) {
-                const result = parseLine(line, { noParseLine: this.options.noParseLine });
+                const result = parseLine(line, {
+                    noParseLine: this.options.noParseLine
+                });
                 this.push(result);
             }
         }, next);
     }
     _flush(done) {
         if (this.lineBuffer) {
-            const line = _.trimEnd(this.lineBuffer);
+            const line = this.lineBuffer.trim();
             if (line.length > 0) {
-                const result = parseLine(line, { noParseLine: this.options.noParseLine });
+                const result = parseLine(line, {
+                    noParseLine: this.options.noParseLine
+                });
                 this.push(result);
             }
 

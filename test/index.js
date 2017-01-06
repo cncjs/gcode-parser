@@ -1,13 +1,12 @@
 import chai from 'chai';
 import fs from 'fs';
-import { GCodeParser, parseFile, parseString, parseStream } from '../lib/';
-import _ from 'lodash';
+import { GCodeParser, parseFile, parseString, parseStream } from '../lib';
 
 const expect = chai.expect;
 const should = chai.should();
 
-describe('G-code Parser', (done) => {
-    describe('Pass a null value as the first argument', (done) => {
+describe('G-code Parser', () => {
+    describe('Pass a null value as the first argument', () => {
         it('should call parseString\'s callback.', (done) => {
             parseString(null, (err, results) => {
                 expect(err).to.be.okay;
@@ -28,9 +27,9 @@ describe('G-code Parser', (done) => {
         });
     });
 
-    describe('Pass an empty text as the first argument', (done) => {
+    describe('Pass an empty text as the first argument', () => {
         it('should get empty results.', (done) => {
-            let sampleText = '';
+            const sampleText = '';
             parseString(sampleText, (err, results) => {
                 expect(results.length).to.be.empty;
                 done();
@@ -38,7 +37,7 @@ describe('G-code Parser', (done) => {
         });
     });
 
-    describe('Contains only lines', (done) => {
+    describe('Contains only lines', () => {
         it('should not parse G-code commands.', (done) => {
             const file = 'test/fixtures/circle.gcode';
 
@@ -58,9 +57,9 @@ describe('G-code Parser', (done) => {
         });
     });
 
-    describe('Contains only comments', (done) => {
+    describe('Contains only comments', () => {
         it('should be 10 non-empty lines.', (done) => {
-            let sampleText = [
+            const sampleText = [
                 ';',
                 '; Operation:    0',
                 '; Name:',         
@@ -81,7 +80,7 @@ describe('G-code Parser', (done) => {
         });
     });
 
-    describe('File not found exception', (done) => {
+    describe('File not found exception', () => {
         it('should fail the callback if a file is not present.', (done) => {
             parseFile('test/fixtures/NO_FILE_ERROR', (err, results) => {
                 expect(err).to.not.be.null;
@@ -91,7 +90,7 @@ describe('G-code Parser', (done) => {
         });
     });
 
-    describe('Event listeners', (done) => {
+    describe('Event listeners', () => {
         it('should call event listeners when loading G-code from file.', (done) => {
             const file = 'test/fixtures/circle.gcode';
 
@@ -139,8 +138,8 @@ describe('G-code Parser', (done) => {
         });
     });
 
-    describe('parseFile / parseStream / parseString', (done) => {
-        let expectedResults = [
+    describe('parseFile / parseStream / parseString', () => {
+        const expectedResults = [
             {
                 line: 'G0 X-5 Y0 Z0 F200',
                 words: [['G', 0], ['X', -5], ['Y', 0], ['Z', 0], ['F', 200]]
@@ -195,63 +194,63 @@ describe('G-code Parser', (done) => {
         });
     });
 
-    describe('More examples', (done) => {
+    describe('More examples', () => {
         it('should contain the line number.', (done) => {
             parseFile('test/fixtures/circle-inch.gcode', (err, list) => {
                 expect(err).to.be.null;
                 list.forEach((data) => {
-                    let { N } = data;
-                    expect(N).to.exist;
+                    const { ln } = data;
+                    expect(ln).to.exist;
                 });
                 done();
             });
         });
 
         it('should get the expected results for special fields.', (done) => {
-            let expectedResults = [
+            const expectedResults = [
                 {
-                    N: 1,
+                    ln: 1,
                     line: 'N1 G20 (inches)',
                     words: [['G', 20]]
                 },
                 {
-                    N: 2,
+                    ln: 2,
                     line: 'N2 G90 (absolute)',
                     words: [['G', 90]]
                 },
                 {
-                    N: 3,
+                    ln: 3,
                     cs: 57,
                     line: 'N3 T0*57',
                     words: [['T', 0]]
                 },
                 {
-                    N: 4,
+                    ln: 4,
                     cs: 67,
                     line: 'N4 G92 E0*67',
                     words: [['G', 92], ['E', 0]]
                 },
                 {
-                    N: 5,
+                    ln: 5,
                     cs: 22,
                     line: 'N5 G28*22',
                     words: [['G', 28]]
                 },
                 {
-                    N: 6,
+                    ln: 6,
                     cs: 82,
                     line: 'N6 G1 F1500.0*82',
                     words: [['G', 1], ['F', 1500]]
                 },
                 {
-                    N: 7,
+                    ln: 7,
                     cs: 85,
                     line: 'N7 G1 X2.0 Y2.0 F3000.0*85',
                     words: [['G', 1], ['X', 2], ['Y', 2], ['F', 3000]]
                 },
                 {
                     err: true, // checksum failed
-                    N: 8,
+                    ln: 8,
                     cs: 30, // invalid checksum
                     line: 'N8 G1 X3.0 Y3.0*30 ; checksum failed',
                     words: [['G', 1], ['X', 3], ['Y', 3]]
@@ -264,7 +263,7 @@ describe('G-code Parser', (done) => {
         });
 
         it('should allow spaces between commands.', (done) => {
-            let expectedResults = [
+            const expectedResults = [
                 {
                     line: 'G0X-5Y0Z0F200',
                     words: [['G', 0], ['X', -5], ['Y', 0], ['Z', 0], ['F', 200]]
