@@ -11,12 +11,12 @@
 var fs = require('fs');
 var parser = require('gcode-parser');
 
-// Parse from line
+// parseLine
 var line = 'G0 X0 Y0';
 var result = parser.parseLine(line);
 console.log(result);
 
-// Parse from file
+// parseFile
 var file = 'example.nc';
 parser.parseFile(file, function(err, results) {
     console.log(results);
@@ -25,13 +25,13 @@ parser.parseFile(file, function(err, results) {
 // Synchronous version of parseFile.
 results = parser.parseFileSync(file);
 
-// Parse from stream
+// parseStream
 var stream = fs.createReadStream(file, { encoding: 'utf8' });
 parser.parseStream(stream, function(err, results) {
     console.log(results);
 });
 
-// Parse from string
+// parseString
 var str = fs.readFileSync(file, 'utf8');
 parser.parseString(str, function(err, results) {
     console.log(results);
