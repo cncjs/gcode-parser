@@ -1,11 +1,18 @@
 import chai from 'chai';
 import fs from 'fs';
-import { GCodeParser, parseFile, parseString, parseStream } from '../lib';
+import {
+    GCodeParser,
+    parseStream,
+    parseString,
+    parseStringSync,
+    parseFile,
+    parseFileSync
+} from '../lib';
 
 const expect = chai.expect;
 const should = chai.should();
 
-describe('G-code Parser', () => {
+describe('gcode-parser', () => {
     describe('Pass a null value as the first argument', () => {
         it('should call parseString\'s callback.', (done) => {
             parseString(null, (err, results) => {
@@ -138,7 +145,7 @@ describe('G-code Parser', () => {
         });
     });
 
-    describe('parseFile / parseStream / parseString', () => {
+    describe('parseStream()', () => {
         const expectedResults = [
             {
                 line: 'G0 X-5 Y0 Z0 F200',
@@ -170,27 +177,172 @@ describe('G-code Parser', () => {
             }
         ];
 
-        it('should get the expected results in the parseFile\'s callback.', (done) => {
-            parseFile('test/fixtures/circle.gcode', (err, results) => {
-                expect(results).to.deep.equal(expectedResults);
-                done();
-            });
-        });
-
-        it('should get the expected results in the parseStream\'s callback.', (done) => {
+        it('should get expected results in the callback.', (done) => {
             const stream = fs.createReadStream('test/fixtures/circle.gcode', { encoding: 'utf8' });
             parseStream(stream, (err, results) => {
                 expect(results).to.deep.equal(expectedResults);
                 done();
             });
         });
+    });
 
-        it('should get the expected results in the parseString\'s callback.', (done) => {
+    describe('parseString()', () => {
+        const expectedResults = [
+            {
+                line: 'G0 X-5 Y0 Z0 F200',
+                words: [['G', 0], ['X', -5], ['Y', 0], ['Z', 0], ['F', 200]]
+            },
+            {
+                line: 'G2 X0 Y5 I5 J0 F200',
+                words: [['G', 2], ['X', 0], ['Y', 5], ['I', 5], ['J', 0], ['F', 200]]
+            },
+            {
+                line: 'G02 X5 Y0 I0 J-5',
+                words: [['G', 2], ['X', 5], ['Y', 0], ['I', 0], ['J', -5]]
+            },
+            {
+                line: 'G02 X0 Y-5 I-5 J0',
+                words: [['G', 2], ['X', 0], ['Y',-5], ['I', -5], ['J', 0]]
+            },
+            {
+                line: 'G02 X-5 Y0 I0 J5',
+                words: [['G', 2], ['X', -5], ['Y', 0], ['I', 0], ['J', 5]]
+            },
+            {
+                line: 'G01 Z1 F500',
+                words: [['G', 1], ['Z', 1], ['F', 500]]
+            },
+            {
+                line: 'G00 X0 Y0 Z5',
+                words: [['G', 0], ['X', 0], ['Y', 0], ['Z', 5]]
+            }
+        ];
+
+        it('should get expected results in the callback.', (done) => {
             const str = fs.readFileSync('test/fixtures/circle.gcode', 'utf8');
             parseString(str, (err, results) => {
                 expect(results).to.deep.equal(expectedResults);
                 done();
             });
+        });
+    });
+
+    describe('parseStringSync()', () => {
+        const expectedResults = [
+            {
+                line: 'G0 X-5 Y0 Z0 F200',
+                words: [['G', 0], ['X', -5], ['Y', 0], ['Z', 0], ['F', 200]]
+            },
+            {
+                line: 'G2 X0 Y5 I5 J0 F200',
+                words: [['G', 2], ['X', 0], ['Y', 5], ['I', 5], ['J', 0], ['F', 200]]
+            },
+            {
+                line: 'G02 X5 Y0 I0 J-5',
+                words: [['G', 2], ['X', 5], ['Y', 0], ['I', 0], ['J', -5]]
+            },
+            {
+                line: 'G02 X0 Y-5 I-5 J0',
+                words: [['G', 2], ['X', 0], ['Y',-5], ['I', -5], ['J', 0]]
+            },
+            {
+                line: 'G02 X-5 Y0 I0 J5',
+                words: [['G', 2], ['X', -5], ['Y', 0], ['I', 0], ['J', 5]]
+            },
+            {
+                line: 'G01 Z1 F500',
+                words: [['G', 1], ['Z', 1], ['F', 500]]
+            },
+            {
+                line: 'G00 X0 Y0 Z5',
+                words: [['G', 0], ['X', 0], ['Y', 0], ['Z', 5]]
+            }
+        ];
+
+        it('should return expected results.', (done) => {
+            const str = fs.readFileSync('test/fixtures/circle.gcode', 'utf8');
+            const results = parseStringSync(str);
+            expect(results).to.deep.equal(expectedResults);
+            done();
+        });
+    });
+
+    describe('parseFile()', () => {
+        const expectedResults = [
+            {
+                line: 'G0 X-5 Y0 Z0 F200',
+                words: [['G', 0], ['X', -5], ['Y', 0], ['Z', 0], ['F', 200]]
+            },
+            {
+                line: 'G2 X0 Y5 I5 J0 F200',
+                words: [['G', 2], ['X', 0], ['Y', 5], ['I', 5], ['J', 0], ['F', 200]]
+            },
+            {
+                line: 'G02 X5 Y0 I0 J-5',
+                words: [['G', 2], ['X', 5], ['Y', 0], ['I', 0], ['J', -5]]
+            },
+            {
+                line: 'G02 X0 Y-5 I-5 J0',
+                words: [['G', 2], ['X', 0], ['Y',-5], ['I', -5], ['J', 0]]
+            },
+            {
+                line: 'G02 X-5 Y0 I0 J5',
+                words: [['G', 2], ['X', -5], ['Y', 0], ['I', 0], ['J', 5]]
+            },
+            {
+                line: 'G01 Z1 F500',
+                words: [['G', 1], ['Z', 1], ['F', 500]]
+            },
+            {
+                line: 'G00 X0 Y0 Z5',
+                words: [['G', 0], ['X', 0], ['Y', 0], ['Z', 5]]
+            }
+        ];
+
+        it('should get expected results in the callback.', (done) => {
+            parseFile('test/fixtures/circle.gcode', (err, results) => {
+                expect(results).to.deep.equal(expectedResults);
+                done();
+            });
+        });
+    });
+
+    describe('parseFileSync()', () => {
+        const expectedResults = [
+            {
+                line: 'G0 X-5 Y0 Z0 F200',
+                words: [['G', 0], ['X', -5], ['Y', 0], ['Z', 0], ['F', 200]]
+            },
+            {
+                line: 'G2 X0 Y5 I5 J0 F200',
+                words: [['G', 2], ['X', 0], ['Y', 5], ['I', 5], ['J', 0], ['F', 200]]
+            },
+            {
+                line: 'G02 X5 Y0 I0 J-5',
+                words: [['G', 2], ['X', 5], ['Y', 0], ['I', 0], ['J', -5]]
+            },
+            {
+                line: 'G02 X0 Y-5 I-5 J0',
+                words: [['G', 2], ['X', 0], ['Y',-5], ['I', -5], ['J', 0]]
+            },
+            {
+                line: 'G02 X-5 Y0 I0 J5',
+                words: [['G', 2], ['X', -5], ['Y', 0], ['I', 0], ['J', 5]]
+            },
+            {
+                line: 'G01 Z1 F500',
+                words: [['G', 1], ['Z', 1], ['F', 500]]
+            },
+            {
+                line: 'G00 X0 Y0 Z5',
+                words: [['G', 0], ['X', 0], ['Y', 0], ['Z', 5]]
+            }
+        ];
+
+        it('should return expected results.', (done) => {
+            const results = parseFileSync('test/fixtures/circle.gcode');
+            expect(results).to.deep.equal(expectedResults);
+            done();
         });
     });
 

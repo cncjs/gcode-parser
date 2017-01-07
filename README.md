@@ -22,6 +22,9 @@ parser.parseFile(file, function(err, results) {
     console.log(results);
 });
 
+// Synchronous version of parseFile.
+results = parser.parseFileSync(file);
+
 // Parse from stream
 var stream = fs.createReadStream(file, { encoding: 'utf8' });
 parser.parseStream(stream, function(err, results) {
@@ -33,6 +36,9 @@ var str = fs.readFileSync(file, 'utf8');
 parser.parseString(str, function(err, results) {
     console.log(results);
 });
+
+// Synchronous version of parseString.
+results = parser.parseStringSync(file);
 ```
 
 ## Advanced Usage

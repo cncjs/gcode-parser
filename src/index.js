@@ -168,6 +168,10 @@ const parseFile = (file, options, callback = noop) => {
     return parseStream(s, options, callback);
 };
 
+const parseFileSync = (file, options) => {
+    return parseStringSync(fs.readFileSync(file, 'utf8'), options);
+};
+
 // @param {string} str The G-code text string
 // @param {options} options The options object
 // @param {function} callback The callback function
@@ -178,6 +182,27 @@ const parseString = (str, options, callback = noop) => {
     }
     return parseStream(streamify(str), options, callback);
 };
+
+const parseStringSync = (str, options) => {
+    const { noParseLine = false } = { ...options };
+    const results = [];
+    const lines = str.split('\n');
+
+    for (let i = 0; i < lines.length; ++i) {
+        const line = lines[i].trim();
+        if (line.length === 0) {
+            continue;
+        }
+        const result = parseLine(line, { noParseLine });
+        results.push(result);
+    }
+
+    return results;
+};
+
+// @param {string} str The G-code text string
+// @param {options} options The options object
+
 
 class GCodeLineStream extends Transform {
     state = {
@@ -275,5 +300,7 @@ export {
     parseLine,
     parseStream,
     parseFile,
-    parseString
+    parseFileSync,
+    parseString,
+    parseStringSync
 };
