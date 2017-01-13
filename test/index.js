@@ -64,10 +64,11 @@ describe('gcode-parser', () => {
         });
     });
 
-    describe('Contains only comments', () => {
-        it('should be 10 non-empty lines.', (done) => {
+    describe('Comments', () => {
+        it('should strip everything after %, #, or ; to the end of the loine including preceding spaces.', (done) => {
             const sampleText = [
-                ';',
+                '  %  ',
+                '  #',
                 '; Operation:    0',
                 '; Name:',         
                 '; Type:         Pocket',
@@ -77,11 +78,57 @@ describe('gcode-parser', () => {
                 '; Pass Depth:   1.9999999999999998',
                 '; Plunge rate:  127',
                 '; Cut rate:     1016',
-                '  ' // skip empty line
+                '  ' // empty line
             ].join('\n');
 
             parseString(sampleText, (err, results) => {
-                expect(results.length).to.be.equal(10);
+                results = results.filter(result => result.length > 0);
+                expect(results.length).to.be.equal(0);
+                done();
+            });
+        });
+    });
+
+    describe('Parentheses', () => {
+        it('should remove anything inside parentheses.', (done) => {
+            const sampleText = [
+                '(Generated with: DXF2GCODE, Version: Py3.4.4 PyQt5.4.1, Date: $Date: Sun Apr 17 16:32:22 2016 +0200 $)',
+                '(Created from file: G:/Dropbox/Konstruktionen/20161022 - MicroCopter 180/complete.dxf)',
+                '(Time: Sun Oct 23 12:30:46 2016)',
+                'G21 (Units in millimeters)  G90 (Absolute programming)',
+                '$H',
+                'F1000',
+                '(*** LAYER: 0 ***)',
+                'T5 M6',
+                'S200',
+                '(* SHAPE Nr: 0 *)',
+                'G0 X 180.327 Y 137.080',
+                'M3'
+            ].join('\n');
+            const expectedResults = [
+                '',
+                '',
+                '',
+                'G21G90',
+                '',
+                'F1000',
+                '',
+                'T5M6',
+                'S200',
+                '',
+                'G0X180.327Y137.08',
+                'M3'
+            ];
+
+            parseString(sampleText, (err, results) => {
+                results = results.map(result => {
+                    console.error('###', result);
+                    const words = result.words.map(word => {
+                        return word.join('');
+                    });
+                    return words.join('');
+                });
+                expect(results).to.deep.equal(expectedResults);
                 done();
             });
         });
