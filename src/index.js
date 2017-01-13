@@ -68,7 +68,7 @@ const parseLine = (() => {
         const re3 = new RegExp(/\s+/g);
         return (line => line.replace(re1, '').replace(re2, '').replace(re3, ''));
     })();
-    const re = /([a-zA-Z][0-9\+\-\.]*)|(\*[0-9]+)/igm;
+    const re = /([a-zA-Z][0-9\+\-\.]*)|(\*[0-9]+)|(\$[a-zA-Z0-9$#]*)/igm;
 
     return (line, options) => {
         options = options || {};
@@ -89,23 +89,22 @@ const parseLine = (() => {
                 const letter = word[0].toUpperCase();
                 const argument = word.slice(1);
 
-                //
-                // Special fields
-                //
-
-                { // N: Line number
-                    if (letter === 'N' && typeof ln === 'undefined') {
-                        // Line (block) number in program
-                        ln = Number(argument);
-                        continue;
-                    }
+                // $: Grbl-specific commands
+                if (letter === '$') {
+                    continue;
                 }
 
-                { // *: Checksum
-                    if (letter === '*' && typeof cs === 'undefined') {
-                        cs = Number(argument);
-                        continue;
-                    }
+                // N: Line number
+                if (letter === 'N' && typeof ln === 'undefined') {
+                    // Line (block) number in program
+                    ln = Number(argument);
+                    continue;
+                }
+
+                // *: Checksum
+                if (letter === '*' && typeof cs === 'undefined') {
+                    cs = Number(argument);
+                    continue;
                 }
 
                 result.words.push([letter, Number(argument)]);
