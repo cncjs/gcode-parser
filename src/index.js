@@ -62,12 +62,11 @@ const parseLine = (() => {
         }
         return cs;
     };
-    const stripLine = (() => {
+    const stripComments = (() => {
         const re1 = new RegExp(/\s*[%#;].*/g); // Strip everything after %, #, or ; to the end of the line, including preceding spaces
-        const re2 = new RegExp(/\s*\(.*\)/g); // Remove anything inside the parentheses
+        const re2 = new RegExp(/\s*\([^\)]*\)/g); // Remove anything inside the parentheses
         const re3 = new RegExp(/\s+/g);
-
-        return (s => s.replace(re1, '').replace(re2, '').replace(re3, ''));
+        return (line => line.replace(re1, '').replace(re2, '').replace(re3, ''));
     })();
     const re = /([a-zA-Z][0-9\+\-\.]*)|(\*[0-9]+)/igm;
 
@@ -84,7 +83,7 @@ const parseLine = (() => {
 
             let ln; // Line number
             let cs; // Checksum
-            const words = stripLine(line).match(re) || [];
+            const words = stripComments(line).match(re) || [];
             for (let i = 0; i < words.length; ++i) {
                 const word = words[i];
                 const letter = word[0].toUpperCase();
