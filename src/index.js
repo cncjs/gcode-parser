@@ -62,9 +62,11 @@ const parseLine = (() => {
         }
         return cs;
     };
+    // http://linuxcnc.org/docs/html/gcode/overview.html#gcode:comments
+    // Comments can be embedded in a line using parentheses () or for the remainder of a lineusing a semi-colon. The semi-colon is not treated as the start of a comment when enclosed in parentheses.
     const stripComments = (() => {
-        const re1 = new RegExp(/\s*[%#;].*/g); // Strip everything after %, #, or ; to the end of the line, including preceding spaces
-        const re2 = new RegExp(/\s*\([^\)]*\)/g); // Remove anything inside the parentheses
+        const re1 = new RegExp(/\s*\([^\)]*\)/g); // Remove anything inside the parentheses
+        const re2 = new RegExp(/\s*;.*/g); // Remove anything after a semi-colon to the end of the line, including preceding spaces
         const re3 = new RegExp(/\s+/g);
         return (line => line.replace(re1, '').replace(re2, '').replace(re3, ''));
     })();
