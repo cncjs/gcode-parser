@@ -1,4 +1,4 @@
-# gcode-parser [![build status](https://travis-ci.org/cheton/gcode-parser.svg?branch=master)](https://travis-ci.org/cheton/gcode-parser) [![Coverage Status](https://coveralls.io/repos/cheton/gcode-parser/badge.svg?branch=master&service=github)](https://coveralls.io/github/cheton/gcode-parser?branch=master)
+# gcode-parser [![build status](https://travis-ci.org/cncjs/gcode-parser.svg?branch=master)](https://travis-ci.org/cncjs/gcode-parser) [![Coverage Status](https://coveralls.io/repos/cncjs/gcode-parser/badge.svg?branch=master&service=github)](https://coveralls.io/github/cncjs/gcode-parser?branch=master)
 
 [![NPM](https://nodei.co/npm/gcode-parser.png?downloads=true&stars=true)](https://www.npmjs.com/package/gcode-parser)
 
@@ -94,10 +94,10 @@ parser.parseFile('/path/to/file', { noParseLine: true }, function(err, results) 
 ```
 
 ## G-code Interpreter
-https://github.com/cheton/gcode-interpreter
+https://github.com/cncjs/gcode-interpreter
 
 ## G-code Toolpath
-https://github.com/cheton/gcode-toolpath
+https://github.com/cncjs/gcode-toolpath
 
 ## G-code Toolpath Visualizer
-Check out the source code at https://github.com/cheton/cnc/blob/master/src/web/widgets/Visualizer/GCodeVisualizer.js
+Check out the source code at https://github.com/cncjs/cncjs/blob/master/src/web/widgets/Visualizer/GCodeVisualizer.js
