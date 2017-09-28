@@ -15,7 +15,7 @@ gulp.task('pre-test', () => {
 
 gulp.task('test', ['pre-test'], () => {
     return gulp.src(['test/*.js'])
-        .pipe(mocha())
+        .pipe(mocha({ compilers: 'js:babel-core/register' }))
         // Creating the reports after tests ran
         .pipe(istanbul.writeReports())
         // Checking coverage against minimum acceptable thresholds
