@@ -10,7 +10,7 @@
     "url": "git@github.com:cheton/gcode-parser.git"
   },
   "engines": {
-    "node": ">=0.10.x"
+    "node": ">=4"
   },
   "keywords": [
     "cnc",
