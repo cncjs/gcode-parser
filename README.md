@@ -12,9 +12,12 @@ var fs = require('fs');
 var parser = require('gcode-parser');
 
 // parseLine
-var line = 'G0 X0 Y0';
-var result = parser.parseLine(line);
-console.log(result);
+parser.parseLine('G0 X0 Y0');
+// => { line: 'G0 X0 Y0', words: [ [ 'G', 0 ], [ 'X', 0 ], [ 'Y', 0 ] ] }
+
+// parseLine (flatten mode)
+parser.parseLine('G0 X0 Y0', { flatten: true });
+// => { line: 'G0 X0 Y0', words: [ 'G0', 'X0', 'Y0' ] }
 
 // parseFile
 var file = 'example.nc';
@@ -80,6 +83,17 @@ Type: `Number`
 Default: `1000`
 
 The batch size.
+
+### flatten
+
+Type: `Boolean`
+Default: `false`
+
+True to flatten the array, false otherwise.
+
+```js
+parser.parseLine('G0 X0 Y0', { flatten: true });
+```
 
 ### noParseLine
 

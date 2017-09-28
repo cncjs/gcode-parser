@@ -2,6 +2,7 @@ import chai from 'chai';
 import fs from 'fs';
 import {
     GCodeParser,
+    parseLine,
     parseStream,
     parseString,
     parseStringSync,
@@ -64,8 +65,27 @@ describe('gcode-parser', () => {
         });
     });
 
+    describe('Commands', () => {
+        it('should parse $ commands for Grbl.', (done) => {
+            const data = parseLine('$H $C');
+            expect(data).to.be.an('object');
+            expect(data.line).to.be.an('string');
+            expect(data.words).to.be.empty;
+            expect(data.cmds).to.deep.equal(['$H', '$C']);
+            done();
+        });
+        it('should parse % commands for bCNC and CNCjs.', (done) => {
+            const data = parseLine('%wait');
+            expect(data).to.be.an('object');
+            expect(data.line).to.be.an('string');
+            expect(data.words).to.be.empty;
+            expect(data.cmds).to.deep.equal(['%wait']);
+            done();
+        });
+    });
+
     describe('Comments', () => {
-        it('should strip everything after %, #, or ; to the end of the loine including preceding spaces.', (done) => {
+        it('should strip everything after a semi-colon to the end of the loine including preceding spaces.', (done) => {
             const sampleText = [
                 '  %  ',
                 '  #',
@@ -122,7 +142,6 @@ describe('gcode-parser', () => {
 
             parseString(sampleText, (err, results) => {
                 results = results.map(result => {
-                    console.error('###', result);
                     const words = result.words.map(word => {
                         return word.join('');
                     });
@@ -189,6 +208,20 @@ describe('gcode-parser', () => {
                 expect(results).to.be.an('array');
                 expect(results.length).to.be.equal(7);
             });
+        });
+    });
+
+    describe('parseLine()', () => {
+        it('should return expected results.', (done) => {
+            expect(parseLine('G0 X0 Y0')).to.deep.equal({
+                line: 'G0 X0 Y0',
+                words: [ [ 'G', 0 ], [ 'X', 0 ], [ 'Y', 0 ] ]
+            });
+            expect(parseLine('G0 X0 Y0', { flatten: true })).to.deep.equal({
+                line: 'G0 X0 Y0',
+                words: [ 'G0', 'X0', 'Y0' ]
+            });
+            done();
         });
     });
 

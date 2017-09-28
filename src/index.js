@@ -70,53 +70,74 @@ const parseLine = (() => {
         const re3 = new RegExp(/\s+/g);
         return (line => line.replace(re1, '').replace(re2, '').replace(re3, ''));
     })();
-    const re = /([a-zA-Z][0-9\+\-\.]*)|(\*[0-9]+)|(\$[a-zA-Z0-9$#]*)/igm;
+    const re = /(%[a-zA-Z][a-zA-Z0-9_]*)|([a-zA-Z][0-9\+\-\.]*)|(\*[0-9]+)|((?:\$\$)|(?:\$[a-zA-Z0-9#]*))/igm;
 
     return (line, options) => {
         options = options || {};
-        options.noParseLine = options.noParseLine || false;
+        options.flatten = !!options.flatten;
+        options.noParseLine = !!options.noParseLine;
 
         const result = {
             line: line
         };
 
-        if (!options.noParseLine) {
-            result.words = [];
+        if (options.noParseLine) {
+            return result;
+        }
 
-            let ln; // Line number
-            let cs; // Checksum
-            const words = stripComments(line).match(re) || [];
-            for (let i = 0; i < words.length; ++i) {
-                const word = words[i];
-                const letter = word[0].toUpperCase();
-                const argument = word.slice(1);
+        result.words = [];
 
-                // $: Grbl-specific commands
-                if (letter === '$') {
-                    continue;
-                }
+        let ln; // Line number
+        let cs; // Checksum
+        const words = stripComments(line).match(re) || [];
 
-                // N: Line number
-                if (letter === 'N' && typeof ln === 'undefined') {
-                    // Line (block) number in program
-                    ln = Number(argument);
-                    continue;
-                }
+        for (let i = 0; i < words.length; ++i) {
+            const word = words[i];
+            const letter = word[0].toUpperCase();
+            const argument = word.slice(1);
 
-                // *: Checksum
-                if (letter === '*' && typeof cs === 'undefined') {
-                    cs = Number(argument);
-                    continue;
-                }
+            // Parse % commands for bCNC and CNCjs
+            // - %wait Wait until the planner queue is empty
+            if (letter === '%') {
+                result.cmds = (result.cmds || []).concat(`${letter}${argument}`);
+                continue;
+            }
 
+            // Parse $ commands for Grbl
+            // - $C Check gcode mode
+            // - $H Run homing cycle
+            if (letter === '$') {
+                result.cmds = (result.cmds || []).concat(`${letter}${argument}`);
+                continue;
+            }
+
+            // N: Line number
+            if (letter === 'N' && typeof ln === 'undefined') {
+                // Line (block) number in program
+                ln = Number(argument);
+                continue;
+            }
+
+            // *: Checksum
+            if (letter === '*' && typeof cs === 'undefined') {
+                cs = Number(argument);
+                continue;
+            }
+
+            if (options.flatten) {
+                result.words.push(`${letter}${argument}`);
+            } else {
                 result.words.push([letter, Number(argument)]);
             }
+        }
 
-            (typeof(ln) !== 'undefined') && (result.ln = ln); // Line number
-            (typeof(cs) !== 'undefined') && (result.cs = cs); // Checksum
-            if (result.cs && (computeChecksum(line) !== result.cs)) {
-                result.err = true; // checksum failed
-            }
+        // Line number
+        (typeof(ln) !== 'undefined') && (result.ln = ln);
+
+        // Checksum
+        (typeof(cs) !== 'undefined') && (result.cs = cs);
+        if (result.cs && (computeChecksum(line) !== result.cs)) {
+            result.err = true; // checksum failed
         }
 
         return result;
@@ -184,7 +205,7 @@ const parseString = (str, options, callback = noop) => {
 };
 
 const parseStringSync = (str, options) => {
-    const { noParseLine = false } = { ...options };
+    const { flatten = false, noParseLine = false } = { ...options };
     const results = [];
     const lines = str.split('\n');
 
@@ -193,7 +214,10 @@ const parseStringSync = (str, options) => {
         if (line.length === 0) {
             continue;
         }
-        const result = parseLine(line, { noParseLine });
+        const result = parseLine(line, {
+            flatten,
+            noParseLine
+        });
         results.push(result);
     }
 
@@ -218,6 +242,7 @@ class GCodeLineStream extends Transform {
 
     // @param {object} [options] The options object
     // @param {number} [options.batchSize] The batch size.
+    // @param {boolean} [options.flatten] True to flatten the array, false otherwise.
     // @param {boolean} [options.noParseLine] True to not parse line, false otherwise.
     constructor(options = {}) {
         super({ objectMode: true });
@@ -271,6 +296,7 @@ class GCodeLineStream extends Transform {
             line = line.trim();
             if (line.length > 0) {
                 const result = parseLine(line, {
+                    flatten: this.options.flatten,
                     noParseLine: this.options.noParseLine
                 });
                 this.push(result);
@@ -282,6 +308,7 @@ class GCodeLineStream extends Transform {
             const line = this.lineBuffer.trim();
             if (line.length > 0) {
                 const result = parseLine(line, {
+                    flatten: this.options.flatten,
                     noParseLine: this.options.noParseLine
                 });
                 this.push(result);
