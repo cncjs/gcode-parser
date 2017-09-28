@@ -3,11 +3,11 @@
   "version": "1.2.0",
   "description": "G-code parser for Node.js",
   "author": "Cheton Wu <cheton@gmail.com>",
-  "homepage": "https://github.com/cheton/gcode-parser",
+  "homepage": "https://github.com/cncjs/gcode-parser",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git@github.com:cheton/gcode-parser.git"
+    "url": "git@github.com:cncjs/gcode-parser.git"
   },
   "engines": {
     "node": ">=4"
