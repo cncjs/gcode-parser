@@ -92,7 +92,11 @@ Default: `false`
 True to flatten the array, false otherwise.
 
 ```js
+parser.parseLine('G0 X0 Y0');
+// => { line: 'G0 X0 Y0', words: [ [ 'G', 0 ], [ 'X', 0 ], [ 'Y', 0 ] ] }
+
 parser.parseLine('G0 X0 Y0', { flatten: true });
+// => { line: 'G0 X0 Y0', words: [ 'G0', 'X0', 'Y0' ] }
 ```
 
 ### noParseLine
