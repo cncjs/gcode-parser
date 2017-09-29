@@ -17,25 +17,41 @@
     "gcode"
   ],
   "scripts": {
-    "prepublish": "npm run build && npm test",
-    "build": "gulp",
-    "test": "gulp test",
-    "coverage": "istanbul cover node_modules/mocha/bin/_mocha -- --require babel-core/register -R spec",
-    "coverage-clean": "rm -rf ./coverage",
+    "prepublish": "npm run eslint && npm run build && npm test",
+    "eslint": "eslint src",
+    "build": "babel --out-dir ./lib ./src",
+    "test": "cross-env NODE_ENV=test nyc mocha",
     "coveralls": "cat ./coverage/lcov.info | ./node_modules/.bin/coveralls"
   },
   "main": "lib/index.js",
   "dependencies": {},
   "devDependencies": {
-    "babel-core": "^6.26.0",
+    "babel-cli": "^6.26.0",
+    "babel-eslint": "^8.0.1",
+    "babel-plugin-istanbul": "^4.1.5",
     "babel-preset-es2015": "^6.24.1",
     "babel-preset-stage-0": "^6.24.1",
-    "chai": "^3.5.0",
-    "coveralls": "^2.13.2",
-    "gulp": "^3.9.1",
-    "gulp-babel": "^7.0.0",
-    "gulp-istanbul": "^1.1.2",
-    "gulp-mocha": "^4.3.1",
-    "mocha": "^3.5.3"
+    "babel-register": "^6.26.0",
+    "chai": "^4.1.2",
+    "coveralls": "^3.0.0",
+    "cross-env": "^5.0.5",
+    "eslint": "^4.7.2",
+    "eslint-config-trendmicro": "^1.0.0",
+    "eslint-plugin-import": "^2.7.0",
+    "eslint-plugin-jsx-a11y": "^5.1.1",
+    "eslint-plugin-react": "^7.4.0",
+    "mocha": "^3.5.3",
+    "nyc": "^11.2.1"
+  },
+  "nyc": {
+    "require": [
+      "babel-register"
+    ],
+    "reporter": [
+      "lcov",
+      "text"
+    ],
+    "sourceMap": false,
+    "instrument": false
   }
 }

@@ -1,4 +1,4 @@
-import chai from 'chai';
+import { expect } from 'chai';
 import fs from 'fs';
 import {
     GCodeParser,
@@ -8,28 +8,26 @@ import {
     parseStringSync,
     parseFile,
     parseFileSync
-} from '../lib';
-
-const expect = chai.expect;
-const should = chai.should();
+} from '../src';
 
 describe('gcode-parser', () => {
     describe('Pass a null value as the first argument', () => {
         it('should call parseString\'s callback.', (done) => {
             parseString(null, (err, results) => {
-                expect(err).to.be.okay;
+                expect(err).to.be.null;
+                expect(results.length).to.equal(0);
                 done();
             });
         });
         it('should call parseFile\'s callback.', (done) => {
             parseFile(null, (err, results) => {
-                expect(err).to.be.okay;
+                expect(!!err).to.be.true;
                 done();
             });
         });
         it('should call parseStream\'s callback.', (done) => {
             parseStream(null, (err, results) => {
-                expect(err).to.be.okay;
+                expect(!!err).to.be.true;
                 done();
             });
         });
@@ -39,7 +37,7 @@ describe('gcode-parser', () => {
         it('should get empty results.', (done) => {
             const sampleText = '';
             parseString(sampleText, (err, results) => {
-                expect(results.length).to.be.empty;
+                expect(results.length).to.equal(0);
                 done();
             });
         });
