@@ -119,3 +119,7 @@ https://github.com/cncjs/gcode-toolpath
 
 ## G-code Toolpath Visualizer
 Check out the source code at https://github.com/cncjs/cncjs/blob/master/src/web/widgets/Visualizer/GCodeVisualizer.js
+
+## License
+
+MIT
