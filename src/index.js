@@ -1,3 +1,5 @@
+/* eslint no-bitwise: 0 */
+/* eslint no-continue: 0 */
 import events from 'events';
 import fs from 'fs';
 import timers from 'timers';
@@ -58,7 +60,7 @@ const parseLine = (() => {
         let cs = 0;
         for (let i = 0; i < s.length; ++i) {
             const c = s[i].charCodeAt(0);
-            cs = cs ^ c;
+            cs ^= c;
         }
         return cs;
     };
@@ -132,10 +134,10 @@ const parseLine = (() => {
         }
 
         // Line number
-        (typeof(ln) !== 'undefined') && (result.ln = ln);
+        (typeof (ln) !== 'undefined') && (result.ln = ln);
 
         // Checksum
-        (typeof(cs) !== 'undefined') && (result.cs = cs);
+        (typeof (cs) !== 'undefined') && (result.cs = cs);
         if (result.cs && (computeChecksum(line) !== result.cs)) {
             result.err = true; // checksum failed
         }
@@ -231,7 +233,7 @@ const parseStringSync = (str, options) => {
 class GCodeLineStream extends Transform {
     state = {
         lineCount: 0,
-        lastChunkEndedWithCR: false,
+        lastChunkEndedWithCR: false
     };
     options = {
         batchSize: 1000,
