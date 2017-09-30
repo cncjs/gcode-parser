@@ -64,7 +64,7 @@ describe('gcode-parser', () => {
     });
 
     describe('Commands', () => {
-        it('should parse $ commands for Grbl.', (done) => {
+        it('should be able to parse $ command (e.g. Grbl).', (done) => {
             const data = parseLine('$H $C');
             expect(data).to.be.an('object');
             expect(data.line).to.be.an('string');
@@ -72,12 +72,31 @@ describe('gcode-parser', () => {
             expect(data.cmds).to.deep.equal(['$H', '$C']);
             done();
         });
-        it('should parse % commands for bCNC and CNCjs.', (done) => {
-            const data = parseLine('%wait');
-            expect(data).to.be.an('object');
-            expect(data.line).to.be.an('string');
-            expect(data.words).to.be.empty;
-            expect(data.cmds).to.deep.equal(['%wait']);
+        it('should be able to parse % command (e.g. bCNC, CNCjs).', (done) => {
+            { // %wait
+                const data = parseLine('%wait');
+                expect(data).to.be.an('object');
+                expect(data.line).to.be.an('string');
+                expect(data.words).to.be.empty;
+                expect(data.cmds).to.deep.equal(['%wait']);
+            }
+
+            { // %zsafe=10
+                const data = parseLine('%zsafe=10');
+                expect(data).to.be.an('object');
+                expect(data.line).to.be.an('string');
+                expect(data.words).to.be.empty;
+                expect(data.cmds).to.deep.equal(['%zsafe=10']);
+            }
+
+            { // %x0=posx,y0=posy,z0=posz
+                const data = parseLine('%x0=posx,y0=posy,z0=posz');
+                expect(data).to.be.an('object');
+                expect(data.line).to.be.an('string');
+                expect(data.words).to.be.empty;
+                expect(data.cmds).to.deep.equal(['%x0=posx,y0=posy,z0=posz']);
+            }
+
             done();
         });
     });
