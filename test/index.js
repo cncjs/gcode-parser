@@ -81,6 +81,14 @@ describe('gcode-parser', () => {
                 expect(data.cmds).to.deep.equal(['%wait']);
             }
 
+            { // %msg Restart spindle
+                const data = parseLine('%msg Restart spindle');
+                expect(data).to.be.an('object');
+                expect(data.line).to.be.an('string');
+                expect(data.words).to.be.empty;
+                expect(data.cmds).to.deep.equal(['%msg Restart spindle']);
+            }
+
             { // %zsafe=10
                 const data = parseLine('%zsafe=10');
                 expect(data).to.be.an('object');

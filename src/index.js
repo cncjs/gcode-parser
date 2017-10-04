@@ -101,7 +101,7 @@ const parseLine = (() => {
             // Parse % commands for bCNC and CNCjs
             // - %wait Wait until the planner queue is empty
             if (letter === '%') {
-                result.cmds = (result.cmds || []).concat(`${letter}${argument}`);
+                result.cmds = (result.cmds || []).concat(line.trim());
                 continue;
             }
 
