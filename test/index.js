@@ -81,6 +81,14 @@ describe('gcode-parser', () => {
                 expect(data.cmds).to.deep.equal(['%wait']);
             }
 
+            { // %wait ; Wait for the planner queue to empty
+                const data = parseLine('%wait ; Wait for the planner queue to empty');
+                expect(data).to.be.an('object');
+                expect(data.line).to.be.an('string');
+                expect(data.words).to.be.empty;
+                expect(data.cmds).to.deep.equal(['%wait ; Wait for the planner queue to empty']);
+            }
+
             { // %msg Restart spindle
                 const data = parseLine('%msg Restart spindle');
                 expect(data).to.be.an('object');
