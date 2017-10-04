@@ -1,6 +1,6 @@
 {
   "name": "gcode-parser",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "description": "G-code parser for Node.js",
   "author": "Cheton Wu <cheton@gmail.com>",
   "homepage": "https://github.com/cncjs/gcode-parser",
