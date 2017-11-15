@@ -126,10 +126,15 @@ const parseLine = (() => {
                 continue;
             }
 
+            let value = Number(argument);
+            if (Number.isNaN(value)) {
+                value = argument;
+            }
+
             if (options.flatten) {
-                result.words.push(`${letter}${argument}`);
+                result.words.push(letter + value);
             } else {
-                result.words.push([letter, Number(argument)]);
+                result.words.push([letter, value]);
             }
         }
 

@@ -152,11 +152,11 @@ describe('gcode-parser', () => {
                 '$H',
                 'F1000',
                 '(*** LAYER: 0 ***)',
-                'T5 M6',
+                'T5 M06',
                 'S200',
                 '(* SHAPE Nr: 0 *)',
                 'G0 X 180.327 Y 137.080',
-                'M3'
+                'M03'
             ].join('\n');
             const expectedResults = [
                 '',
