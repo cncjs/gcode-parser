@@ -72,7 +72,7 @@ const parseLine = (() => {
         const re3 = new RegExp(/\s+/g);
         return (line => line.replace(re1, '').replace(re2, '').replace(re3, ''));
     })();
-    const re = /(%.*)|((?:\$\$)|(?:\$[a-zA-Z0-9#]*))|([a-zA-Z][0-9\+\-\.]*)|(\*[0-9]+)/igm;
+    const re = /(%.*)|({.*)|((?:\$\$)|(?:\$[a-zA-Z0-9#]*))|([a-zA-Z][0-9\+\-\.]*)|(\*[0-9]+)/igm;
 
     return (line, options) => {
         options = options || {};
@@ -93,6 +93,8 @@ const parseLine = (() => {
         let cs; // Checksum
         const words = stripComments(line).match(re) || [];
 
+        console.log(words);
+
         for (let i = 0; i < words.length; ++i) {
             const word = words[i];
             const letter = word[0].toUpperCase();
@@ -101,6 +103,12 @@ const parseLine = (() => {
             // Parse % commands for bCNC and CNCjs
             // - %wait Wait until the planner queue is empty
             if (letter === '%') {
+                result.cmds = (result.cmds || []).concat(line.trim());
+                continue;
+            }
+
+            // Parser JSON commands for TinyG and g2core
+            if (letter === '{') {
                 result.cmds = (result.cmds || []).concat(line.trim());
                 continue;
             }

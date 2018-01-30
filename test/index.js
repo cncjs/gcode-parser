@@ -72,6 +72,24 @@ describe('gcode-parser', () => {
             expect(data.cmds).to.deep.equal(['$H', '$C']);
             done();
         });
+        it('should be able to parse JSON command (e.g. TinyG, g2core).', (done) => {
+            { // {sr:{spe:t,spd,sps:t}}
+                const data = parseLine('{sr:{spe:t,spd:t,sps:t}}');
+                expect(data).to.be.an('object');
+                expect(data.line).to.be.an('string');
+                expect(data.words).to.be.empty;
+                expect(data.cmds).to.deep.equal(['{sr:{spe:t,spd:t,sps:t}}']);
+            }
+            { // Request Motor Timeout: {mt:n}
+                const data = parseLine('{mt:n}');
+                expect(data).to.be.an('object');
+                expect(data.line).to.be.an('string');
+                expect(data.words).to.be.empty;
+                expect(data.cmds).to.deep.equal(['{mt:n}']);
+            }
+
+            done();
+        });
         it('should be able to parse % command (e.g. bCNC, CNCjs).', (done) => {
             { // %wait
                 const data = parseLine('%wait');
