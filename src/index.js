@@ -93,8 +93,6 @@ const parseLine = (() => {
         let cs; // Checksum
         const words = stripComments(line).match(re) || [];
 
-        console.log(words);
-
         for (let i = 0; i < words.length; ++i) {
             const word = words[i];
             const letter = word[0].toUpperCase();
