@@ -246,11 +246,14 @@ class GCodeLineStream extends Transform {
         lineCount: 0,
         lastChunkEndedWithCR: false
     };
+
     options = {
         batchSize: 1000,
         noParseLine: false
     };
+
     lineBuffer = '';
+
     re = new RegExp(/.*(?:\r\n|\r|\n)|.+$/g);
 
     // @param {object} [options] The options object
@@ -316,6 +319,7 @@ class GCodeLineStream extends Transform {
             }
         }, next);
     }
+
     _flush(done) {
         if (this.lineBuffer) {
             const line = this.lineBuffer.trim();
