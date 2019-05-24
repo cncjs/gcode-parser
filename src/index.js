@@ -72,7 +72,7 @@ const parseLine = (() => {
         const re3 = new RegExp(/\s+/g);
         return (line => line.replace(re1, '').replace(re2, '').replace(re3, ''));
     })();
-    const re = /(%.*)|({.*)|((?:\$\$)|(?:\$[a-zA-Z0-9#]*))|([a-zA-Z][0-9\+\-\.]*)|(\*[0-9]+)/igm;
+    const re = /(%.*)|({.*)|((?:\$\$)|(?:\$[a-zA-Z0-9#]*))|([a-zA-Z][0-9\+\-\.]+)|(\*[0-9]+)/igm;
 
     return (line, options) => {
         options = options || {};
@@ -105,7 +105,7 @@ const parseLine = (() => {
                 continue;
             }
 
-            // Parser JSON commands for TinyG and g2core
+            // Parse JSON commands for TinyG and g2core
             if (letter === '{') {
                 result.cmds = (result.cmds || []).concat(line.trim());
                 continue;

@@ -63,6 +63,16 @@ describe('gcode-parser', () => {
         });
     });
 
+    describe('Invalid G-code words', () => {
+        it('should ignore invalid g-code words', (done) => {
+            const data = parseLine('messed up');
+            expect(data).to.be.an('object');
+            expect(data.line).to.be.equal('messed up');
+            expect(data.words).to.be.empty;
+            done();
+        });
+    });
+
     describe('Commands', () => {
         it('should be able to parse $ command (e.g. Grbl).', (done) => {
             const data = parseLine('$H $C');
