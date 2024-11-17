@@ -2,7 +2,7 @@
   "name": "gcode-parser",
   "version": "2.0.0",
   "description": "G-code parser for Node.js",
-  "author": "Cheton Wu <cheton@gmail.com>",
+  "author": "Cheton Wu",
   "homepage": "https://github.com/cncjs/gcode-parser",
   "license": "MIT",
   "repository": {

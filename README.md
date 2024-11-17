@@ -1,4 +1,4 @@
-# gcode-parser [![build status](https://travis-ci.org/cncjs/gcode-parser.svg?branch=master)](https://travis-ci.org/cncjs/gcode-parser) [![Coverage Status](https://coveralls.io/repos/cncjs/gcode-parser/badge.svg?branch=master&service=github)](https://coveralls.io/github/cncjs/gcode-parser?branch=master)
+# gcode-parser [![codecov](https://codecov.io/gh/cncjs/gcode-parser/graph/badge.svg?token=T1D2XQJRXC)](https://codecov.io/gh/cncjs/gcode-parser)
 
 [![NPM](https://nodei.co/npm/gcode-parser.png?downloads=true&stars=true)](https://www.npmjs.com/package/gcode-parser)
 
