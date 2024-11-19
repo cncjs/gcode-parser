@@ -66,53 +66,71 @@ const parseLine = (() => {
   };
   // http://linuxcnc.org/docs/html/gcode/overview.html#gcode:comments
   // Comments can be embedded in a line using parentheses () or for the remainder of a lineusing a semi-colon. The semi-colon is not treated as the start of a comment when enclosed in parentheses.
-  const stripAndExtractComments = (() => {
+  const stripComments = (() => {
     // eslint-disable-next-line no-useless-escape
     const re1 = new RegExp(/\(([^\)]*)\)/g); // Match anything inside parentheses
     const re2 = new RegExp(/;(.*)$/g); // Match anything after a semi-colon to the end of the line
-    const re3 = new RegExp(/\s+/g);
 
     return (line) => {
       const comments = [];
       // Extract comments from parentheses
       line = line.replace(re1, (match, p1) => {
-        const strippedLine = p1.trim();
-        comments.push(strippedLine); // Add the match to comments
+        const lineWithoutComments = p1.trim();
+        comments.push(lineWithoutComments); // Add the match to comments
         return '';
       });
       // Extract comments after a semi-colon
       line = line.replace(re2, (match, p1) => {
-        const strippedLine = p1.trim();
-        comments.push(strippedLine); // Add the match to comments
+        const lineWithoutComments = p1.trim();
+        comments.push(lineWithoutComments); // Add the match to comments
         return '';
       });
-      // Remove whitespace characters
-      line = line.replace(re3, '');
+      line = line.trim();
       return [line, comments];
     };
   })();
+
+  const stripWhitespace = (line) => {
+    // Remove whitespace characters
+    const re = new RegExp(/\s+/g);
+    return line.replace(re, '');
+  };
+
   // eslint-disable-next-line no-useless-escape
   const re = /(%.*)|({.*)|((?:\$\$)|(?:\$[a-zA-Z0-9#]*))|([a-zA-Z][0-9\+\-\.]+)|(\*[0-9]+)/igm;
 
-  return (line, options) => {
-    options = options || {};
-    options.flatten = !!options.flatten;
-    options.noParseLine = !!options.noParseLine;
+  return (line, options = {}) => {
+    options.flatten = !!options?.flatten;
 
-    const result = {
-      line: line
-    };
-
-    if (options.noParseLine) {
-      return result;
+    const validLineModes = [
+      'original', // Keeps the line unchanged, including comments and whitespace. (Default)
+      'minimal',  // Removes comments, trims leading and trailing whitespace, but preserves inner whitespace.
+      'compact',  // Removes both comments and all whitespace.
+    ];
+    if (!validLineModes.includes(options?.lineMode)) {
+      options.lineMode = validLineModes[0];
     }
 
-    result.words = [];
+    const result = {
+      line: '',
+      words: [],
+    };
 
     let ln; // Line number
     let cs; // Checksum
-    const [strippedLine, comments] = stripAndExtractComments(line);
-    const words = strippedLine.match(re) || [];
+    const originalLine = line;
+    const [minimalLine, comments] = stripComments(line);
+    const compactLine = stripWhitespace(minimalLine);
+
+    if (options.lineMode === 'compact') {
+      result.line = compactLine;
+    } else if (options.lineMode === 'minimal') {
+      result.line = minimalLine;
+    } else {
+      result.line = originalLine;
+    }
+
+    const words = compactLine.match(re) || [];
 
     if (comments.length > 0) {
       result.comments = comments;
@@ -243,7 +261,7 @@ const parseString = (str, options, callback = noop) => {
 };
 
 const parseStringSync = (str, options) => {
-  const { flatten = false, noParseLine = false } = { ...options };
+  const { flatten = false } = { ...options };
   const results = [];
   const lines = str.split('\n');
 
@@ -254,7 +272,6 @@ const parseStringSync = (str, options) => {
     }
     const result = parseLine(line, {
       flatten,
-      noParseLine
     });
     results.push(result);
   }
@@ -272,7 +289,6 @@ class GCodeLineStream extends Transform {
 
   options = {
     batchSize: 1000,
-    noParseLine: false
   };
 
   lineBuffer = '';
@@ -282,7 +298,6 @@ class GCodeLineStream extends Transform {
   // @param {object} [options] The options object
   // @param {number} [options.batchSize] The batch size.
   // @param {boolean} [options.flatten] True to flatten the array, false otherwise.
-  // @param {boolean} [options.noParseLine] True to not parse line, false otherwise.
   constructor(options = {}) {
     super({ objectMode: true });
 
@@ -336,7 +351,6 @@ class GCodeLineStream extends Transform {
       if (line.length > 0) {
         const result = parseLine(line, {
           flatten: this.options.flatten,
-          noParseLine: this.options.noParseLine
         });
         this.push(result);
       }
@@ -349,7 +363,6 @@ class GCodeLineStream extends Transform {
       if (line.length > 0) {
         const result = parseLine(line, {
           flatten: this.options.flatten,
-          noParseLine: this.options.noParseLine
         });
         this.push(result);
       }
