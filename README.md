@@ -80,7 +80,7 @@ parser.parseFile('example.nc', function(err, results) {
 ### batchSize
 
 Type: `Number`
-Default: `1000`
+Default: 1000
 
 The batch size.
 
@@ -99,16 +99,27 @@ parser.parseLine('G0 X0 Y0', { flatten: true });
 // => { line: 'G0 X0 Y0', words: [ 'G0', 'X0', 'Y0' ] }
 ```
 
-### noParseLine
+### lineMode
 
-Type: `Boolean`
-Default: `false`
+Type: `String`  
+Default: `'original'`
 
-True to not parse line, false otherwise.
+The `lineMode` option specifies how the parsed line should be formatted. The following values are supported:
+- `'original'`: Keeps the line unchanged, including comments and whitespace. (Default)
+- `'minimal'`: Removes comments, trims leading and trailing whitespace, but preserves inner whitespace.
+- `'compact'`: Removes both comments and all whitespace.
+
+Example usage:
 
 ```js
-parser.parseFile('/path/to/file', { noParseLine: true }, function(err, results) {
-});
+parser.parseLine('G0 X0 Y0 ; comment', { lineMode: 'original' });
+// => { line: 'G0 X0 Y0 ; comment', words: [ [ 'G', 0 ], [ 'X', 0 ], [ 'Y', 0 ] ] }
+
+parser.parseLine('G0 X0 Y0 ; comment', { lineMode: 'minimal' });
+// => { line: 'G0 X0 Y0', words: [ [ 'G', 0 ], [ 'X', 0 ], [ 'Y', 0 ] ] }
+
+parser.parseLine('G0 X0 Y0 ; comment', { lineMode: 'compact' });
+// => { line: 'G0X0Y0', words: [ [ 'G', 0 ], [ 'X', 0 ], [ 'Y', 0 ] ] }
 ```
 
 ## G-code Interpreter

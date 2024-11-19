@@ -43,44 +43,48 @@ describe('Pass an empty text as the first argument', () => {
   });
 });
 
-describe('Contains only lines', () => {
-  it('should not parse G-code commands.', (done) => {
-    const filepath = path.resolve(__dirname, 'fixtures/circle.gcode');
-    parseFile(filepath, { noParseLine: true }, (err, results) => {
-      expect(results.length).toBe(7);
-      done();
-    })
-      .on('data', (data) => {
-        expect(typeof data).toBe('object');
-        expect(typeof data.line).toBe('string');
-        expect(data.words).toBe(undefined);
-      })
-      .on('end', (results) => {
-        expect(results.length).toBe(7);
-      });
-  });
-});
-
 describe('Invalid G-code words', () => {
-  it('should ignore invalid g-code words', (done) => {
+  it('should ignore invalid g-code words', () => {
     const data = parseLine('messed up');
     expect(typeof data).toBe('object');
     expect(data.line).toBe('messed up');
     expect(data.words).toHaveLength(0);
-    done();
+  });
+});
+
+describe('Using the `lineMode` option', () => {
+  it('should return the original line with comments and whitespace in original mode', () => {
+    const line = 'M6 (tool change;) T1 ; comment';
+    const result = parseLine(line, { lineMode: 'original' });
+    expect(result.line).toBe('M6 (tool change;) T1 ; comment');
+    expect(result.words).toEqual([['M', 6], ['T', 1]]);
+  });
+
+  it('should return the line without comments but with whitespace in minimal mode', () => {
+    const line = 'M6 (tool change;) T1 ; comment';
+    const result = parseLine(line, { lineMode: 'minimal' });
+    expect(result.line).toBe('M6  T1');
+    expect(result.words).toEqual([['M', 6], ['T', 1]]);
+  });
+
+  it('should return the line without comments and whitespace in compact mode', () => {
+    const line = 'M6 (tool change;) T1 ; comment';
+    const result = parseLine(line, { lineMode: 'compact' });
+    expect(result.line).toBe('M6T1');
+    expect(result.words).toEqual([['M', 6], ['T', 1]]);
   });
 });
 
 describe('Commands', () => {
-  it('should be able to parse $ command (e.g. Grbl).', (done) => {
+  it('should be able to parse $ command (e.g. Grbl).', () => {
     const data = parseLine('$H $C');
     expect(typeof data).toBe('object');
     expect(typeof data.line).toBe('string');
     expect(data.words).toHaveLength(0);
     expect(data.cmds).toEqual(['$H', '$C']);
-    done();
   });
-  it('should be able to parse JSON command (e.g. TinyG, g2core).', (done) => {
+
+  it('should be able to parse JSON command (e.g. TinyG, g2core).', () => {
     { // {sr:{spe:t,spd,sps:t}}
       const data = parseLine('{sr:{spe:t,spd:t,sps:t}}');
       expect(typeof data).toBe('object');
@@ -95,10 +99,9 @@ describe('Commands', () => {
       expect(data.words).toHaveLength(0);
       expect(data.cmds).toEqual(['{mt:n}']);
     }
-
-    done();
   });
-  it('should be able to parse % command (e.g. bCNC, CNCjs).', (done) => {
+
+  it('should be able to parse % command (e.g. bCNC, CNCjs).', () => {
     { // %wait
       const data = parseLine('%wait');
       expect(typeof data).toBe('object');
@@ -138,8 +141,6 @@ describe('Commands', () => {
       expect(data.words).toHaveLength(0);
       expect(data.cmds).toEqual(['%x0=posx,y0=posy,z0=posz']);
     }
-
-    done();
   });
 });
 
@@ -323,7 +324,7 @@ describe('Event listeners', () => {
 });
 
 describe('parseLine()', () => {
-  it('should return expected results.', (done) => {
+  it('should return expected results.', () => {
     expect(parseLine('G0 X0 Y0')).toEqual({
       line: 'G0 X0 Y0',
       words: [['G', 0], ['X', 0], ['Y', 0]]
@@ -332,7 +333,6 @@ describe('parseLine()', () => {
       line: 'G0 X0 Y0',
       words: ['G0', 'X0', 'Y0']
     });
-    done();
   });
 });
 
@@ -452,12 +452,11 @@ describe('parseStringSync()', () => {
     }
   ];
 
-  it('should return expected results.', (done) => {
+  it('should return expected results.', () => {
     const filepath = path.resolve(__dirname, 'fixtures/circle.gcode');
     const str = fs.readFileSync(filepath, 'utf8');
     const results = parseStringSync(str);
     expect(results).toEqual(expectedResults);
-    done();
   });
 });
 
