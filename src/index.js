@@ -103,9 +103,9 @@ const parseLine = (() => {
     options.flatten = !!options?.flatten;
 
     const validLineModes = [
-      'original', // Keeps the line unchanged, including comments and whitespace. (Default)
-      'minimal',  // Removes comments, trims leading and trailing whitespace, but preserves inner whitespace.
-      'compact',  // Removes both comments and all whitespace.
+      'original', // Retains the line exactly as is, including comments and whitespace. (This is the default when `lineMode` is not specified.)
+      'stripped',  // Removes comments, trims leading and trailing whitespace (spaces and tabs), but keeps the inner whitespace between code elements.
+      'compact',  // Removes both comments and all whitespace characters.
     ];
     if (!validLineModes.includes(options?.lineMode)) {
       options.lineMode = validLineModes[0];
@@ -119,13 +119,13 @@ const parseLine = (() => {
     let ln; // Line number
     let cs; // Checksum
     const originalLine = line;
-    const [minimalLine, comments] = stripComments(line);
-    const compactLine = stripWhitespace(minimalLine);
+    const [strippedLine, comments] = stripComments(line);
+    const compactLine = stripWhitespace(strippedLine);
 
     if (options.lineMode === 'compact') {
       result.line = compactLine;
-    } else if (options.lineMode === 'minimal') {
-      result.line = minimalLine;
+    } else if (options.lineMode === 'stripped') {
+      result.line = strippedLine;
     } else {
       result.line = originalLine;
     }
