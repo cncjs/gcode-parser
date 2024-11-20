@@ -52,22 +52,22 @@ describe('Invalid G-code words', () => {
   });
 });
 
-describe('Using the `lineMode` option', () => {
-  it('should return the original line with comments and whitespace in original mode', () => {
+describe('The `lineMode` option', () => {
+  it('should retain the line exactly as is, including comments and whitespace for `lineMode="original"`', () => {
     const line = 'M6 (tool change;) T1 ; comment';
     const result = parseLine(line, { lineMode: 'original' });
     expect(result.line).toBe('M6 (tool change;) T1 ; comment');
     expect(result.words).toEqual([['M', 6], ['T', 1]]);
   });
 
-  it('should return the line without comments but with whitespace in minimal mode', () => {
+  it('should remove comments, trims leading and trailing whitespace (spaces and tabs), but keeps the inner whitespace between code elements for `lineMode="stripped"`', () => {
     const line = 'M6 (tool change;) T1 ; comment';
-    const result = parseLine(line, { lineMode: 'minimal' });
+    const result = parseLine(line, { lineMode: 'stripped' });
     expect(result.line).toBe('M6  T1');
     expect(result.words).toEqual([['M', 6], ['T', 1]]);
   });
 
-  it('should return the line without comments and whitespace in compact mode', () => {
+  it('should remove both comments and all whitespace characters for `lineMode="compact"`', () => {
     const line = 'M6 (tool change;) T1 ; comment';
     const result = parseLine(line, { lineMode: 'compact' });
     expect(result.line).toBe('M6T1');
