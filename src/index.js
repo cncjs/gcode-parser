@@ -95,6 +95,7 @@ const parseLine = (() => {
         if (char === ';' && openParens === 0) {
           // Start semicolon comment outside parentheses
           comments.push(line.slice(i + 1).trim());
+          openParens = 0; // Reset parentheses counter
           break; // Stop further processing after a semicolon comment
         }
 
@@ -105,10 +106,10 @@ const parseLine = (() => {
           } else if (openParens > 0) {
             currentComment += char;
           }
-          openParens += 1;
+          openParens = Math.min(openParens + 1, Number.MAX_SAFE_INTEGER);
         } else if (char === ')') {
           // End parentheses comment
-          openParens = Math.max(0, openParens - 1);  // Prevent negative values
+          openParens = Math.max(0, openParens - 1);
           if (openParens === 0) {
             comments.push(currentComment.trim());
             currentComment = '';
@@ -124,7 +125,7 @@ const parseLine = (() => {
         }
       }
 
-      result = result.trim(); // Ensure result is clean after parsing
+      result = result.trim();
       return [result, comments];
     };
 
