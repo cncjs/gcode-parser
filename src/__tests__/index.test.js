@@ -35,8 +35,9 @@ describe('Pass a null value as the first argument', () => {
 
 describe('Pass an empty text as the first argument', () => {
   it('should get empty results.', (done) => {
-    const sampleText = '';
-    parseString(sampleText, (err, results) => {
+    const inputText = '';
+    parseString(inputText, (err, results) => {
+      expect(err).toBeNull();
       expect(results.length).toBe(0);
       done();
     });
@@ -144,9 +145,38 @@ describe('Commands', () => {
   });
 });
 
-describe('Comments', () => {
+describe('Stripping comments', () => {
+  it('should correctly parse a semicolon comment before parentheses', () => {
+    const line = 'M6 ; comment (tool change) T1';
+    const data = parseLine(line, { lineMode: 'stripped' });
+    expect(data.line).toBe('M6');
+    expect(data.comments).toEqual([
+      'comment (tool change) T1',
+    ]);
+  });
+
+  it('should correctly parse nested parentheses containing a semicolon', () => {
+    const line = 'M6 (outer (inner;)) T1 ; comment';
+    const data = parseLine(line, { lineMode: 'stripped' });
+    expect(data.line).toBe('M6  T1');
+    expect(data.comments).toEqual([
+      'outer (inner;)',
+      'comment',
+    ]);
+  });
+
+  it('should correctly parse multiple comments in a line', () => {
+    const line = 'M6 (first comment) T1 ; second comment';
+    const data = parseLine(line, { lineMode: 'stripped' });
+    expect(data.line).toBe('M6  T1');
+    expect(data.comments).toEqual([
+      'first comment',
+      'second comment',
+    ]);
+  });
+
   it('should strip everything after a semi-colon to the end of the loine including preceding spaces.', (done) => {
-    const sampleText = [
+    const inputText = [
       '  %  ',
       '  #',
       '; Operation:    0',
@@ -161,17 +191,26 @@ describe('Comments', () => {
       '  ' // empty line
     ].join('\n');
 
-    parseString(sampleText, (err, results) => {
-      results = results.filter(result => result.length > 0);
-      expect(results.length).toBe(0);
+    parseString(inputText, { lineMode: 'stripped' }, (err, results) => {
+      expect(results).toEqual([
+        { line: '%', words: [], cmds: [ '%' ] },
+        { line: '#', words: [] },
+        { line: '', words: [], comments: [ 'Operation:    0' ] },
+        { line: '', words: [], comments: [ 'Name:' ] },
+        { line: '', words: [], comments: [ 'Type:         Pocket' ] },
+        { line: '', words: [], comments: [ 'Paths:        3' ] },
+        { line: '', words: [], comments: [ 'Direction:    Conventional' ] },
+        { line: '', words: [], comments: [ 'Cut Depth:    3.175' ] },
+        { line: '', words: [], comments: [ 'Pass Depth:   1.9999999999999998' ] },
+        { line: '', words: [], comments: [ 'Plunge rate:  127' ] },
+        { line: '', words: [], comments: [ 'Cut rate:     1016' ] }
+      ]);
       done();
     });
   });
-});
 
-describe('Parentheses', () => {
   it('should remove anything inside parentheses.', (done) => {
-    const sampleText = [
+    const inputText = [
       '(Generated with: DXF2GCODE, Version: Py3.4.4 PyQt5.4.1, Date: $Date: Sun Apr 17 16:32:22 2016 +0200 $)',
       '(Created from file: G:/Dropbox/Konstruktionen/20161022 - MicroCopter 180/complete.dxf)',
       '(Time: Sun Oct 23 12:30:46 2016)',
@@ -187,80 +226,60 @@ describe('Parentheses', () => {
     ].join('\n');
     const expectedResults = [
       {
-        gcode: '',
-        cmds: undefined,
+        line: '',
         comments: ['Generated with: DXF2GCODE, Version: Py3.4.4 PyQt5.4.1, Date: $Date: Sun Apr 17 16:32:22 2016 +0200 $'],
       },
       {
-        gcode: '',
-        cmds: undefined,
+        line: '',
         comments: ['Created from file: G:/Dropbox/Konstruktionen/20161022 - MicroCopter 180/complete.dxf'],
       },
       {
-        gcode: '',
-        cmds: undefined,
+        line: '',
         comments: ['Time: Sun Oct 23 12:30:46 2016'],
       },
       {
-        gcode: 'G21G90',
-        cmds: undefined,
+        line: 'G21G90',
         comments: ['Units in millimeters', 'Absolute programming'],
       },
       {
-        gcode: '',
-        cmds: ['$H'],
+        line: '$H',
         comments: undefined,
       },
       {
-        gcode: 'F1000',
-        cmds: undefined,
+        line: 'F1000',
         comments: undefined,
       },
       {
-        gcode: '',
-        cmds: undefined,
+        line: '',
         comments: ['*** LAYER: 0 ***'],
       },
       {
-        gcode: 'T5M6',
-        cmds: undefined,
+        line: 'T5M06',
         comments: undefined,
       },
       {
-        gcode: 'S200',
-        cmds: undefined,
+        line: 'S200',
         comments: undefined,
       },
       {
-        gcode: '',
-        cmds: undefined,
+        line: '',
         comments: ['* SHAPE Nr: 0 *'],
       },
       {
-        gcode: 'G0X180.327Y137.08',
-        cmds: undefined,
+        line: 'G0X180.327Y137.080',
         comments: undefined,
       },
       {
-        gcode: 'M3',
-        cmds: undefined,
+        line: 'M03',
         comments: undefined,
       },
     ];
 
-    parseString(sampleText, (err, results) => {
-      results = results.map(result => {
-        const gcode = result.words.map(word => {
-          return word.join('');
-        }).join('');
-        const cmds = result.cmds;
-        const comments = result.comments;
-        return {
-          gcode,
-          cmds,
-          comments,
-        };
-      });
+    parseString(inputText, { lineMode: 'compact' }, (err, results) => {
+      results = results.map(result => ({
+        line: result.line,
+        comments: result.comments,
+      }));
       expect(results).toEqual(expectedResults);
       done();
     });

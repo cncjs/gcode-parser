@@ -1,9 +1,23 @@
-/* eslint no-bitwise: 0 */
-/* eslint no-continue: 0 */
 import events from 'events';
 import fs from 'fs';
 import timers from 'timers';
 import stream, { Transform } from 'stream';
+
+const LINE_MODES = [
+  // Retains the line exactly as is, including comments and whitespace.
+  // This is the default when `lineMode` is not specified.
+  'original',
+
+  // Removes comments, trims leading and trailing whitespace (spaces and tabs), but keeps the inner whitespace between code elements.
+  'stripped',
+
+  // Removes both comments and all whitespace characters.
+  'compact',
+];
+
+const DEFAULT_BATCH_SIZE = 1000;
+const DEFAULT_FLATTEN = false;
+const DEFAULT_LINE_MODE = LINE_MODES[0];
 
 const noop = () => {};
 
@@ -65,28 +79,59 @@ const parseLine = (() => {
     return cs;
   };
   // http://linuxcnc.org/docs/html/gcode/overview.html#gcode:comments
-  // Comments can be embedded in a line using parentheses () or for the remainder of a lineusing a semi-colon. The semi-colon is not treated as the start of a comment when enclosed in parentheses.
+  // Comments can be embedded in a line using parentheses () or for the remainder of a lineusing a semi-colon.
+  // The semi-colon is not treated as the start of a comment when enclosed in parentheses.
   const stripComments = (() => {
-    // eslint-disable-next-line no-useless-escape
-    const re1 = new RegExp(/\(([^\)]*)\)/g); // Match anything inside parentheses
-    const re2 = new RegExp(/;(.*)$/g); // Match anything after a semi-colon to the end of the line
+    const _stripComments = (line) => {
+      let result = '';
+      let currentComment = '';
+      let comments = [];
+      let openParens = 0;
+
+      // Detect semicolon comments before parentheses
+      for (let i = 0; i < line.length; i++) {
+        const char = line[i];
+
+        if (char === ';' && openParens === 0) {
+          // Start semicolon comment outside parentheses
+          comments.push(line.slice(i + 1).trim());
+          openParens = 0; // Reset parentheses counter
+          break; // Stop further processing after a semicolon comment
+        }
+
+        if (char === '(') {
+          // Start parentheses comment
+          if (openParens === 0) {
+            currentComment = '';
+          } else if (openParens > 0) {
+            currentComment += char;
+          }
+          openParens = Math.min(openParens + 1, Number.MAX_SAFE_INTEGER);
+        } else if (char === ')') {
+          // End parentheses comment
+          openParens = Math.max(0, openParens - 1);
+          if (openParens === 0) {
+            comments.push(currentComment.trim());
+            currentComment = '';
+          } else if (openParens > 0) {
+            currentComment += char;
+          }
+        } else if (openParens > 0) {
+          // Inside parentheses comment
+          currentComment += char;
+        } else {
+          // Normal text outside comments
+          result += char;
+        }
+      }
+
+      result = result.trim();
+      return [result, comments];
+    };
 
     return (line) => {
-      const comments = [];
-      // Extract comments from parentheses
-      line = line.replace(re1, (match, p1) => {
-        const lineWithoutComments = p1.trim();
-        comments.push(lineWithoutComments); // Add the match to comments
-        return '';
-      });
-      // Extract comments after a semi-colon
-      line = line.replace(re2, (match, p1) => {
-        const lineWithoutComments = p1.trim();
-        comments.push(lineWithoutComments); // Add the match to comments
-        return '';
-      });
-      line = line.trim();
-      return [line, comments];
+      const [strippedLine, comments] = _stripComments(line);
+      return [strippedLine, comments];
     };
   })();
 
@@ -100,15 +145,10 @@ const parseLine = (() => {
   const re = /(%.*)|({.*)|((?:\$\$)|(?:\$[a-zA-Z0-9#]*))|([a-zA-Z][0-9\+\-\.]+)|(\*[0-9]+)/igm;
 
   return (line, options = {}) => {
-    options.flatten = !!options?.flatten;
-
-    const validLineModes = [
-      'original', // Retains the line exactly as is, including comments and whitespace. (This is the default when `lineMode` is not specified.)
-      'stripped',  // Removes comments, trims leading and trailing whitespace (spaces and tabs), but keeps the inner whitespace between code elements.
-      'compact',  // Removes both comments and all whitespace characters.
-    ];
-    if (!validLineModes.includes(options?.lineMode)) {
-      options.lineMode = validLineModes[0];
+    const flatten = !!(options?.flatten ?? DEFAULT_FLATTEN);
+    let lineMode = options?.lineMode ?? DEFAULT_LINE_MODE;
+    if (!LINE_MODES.includes(options?.lineMode)) {
+      lineMode = DEFAULT_LINE_MODE;
     }
 
     const result = {
@@ -122,9 +162,9 @@ const parseLine = (() => {
     const [strippedLine, comments] = stripComments(line);
     const compactLine = stripWhitespace(strippedLine);
 
-    if (options.lineMode === 'compact') {
+    if (lineMode === 'compact') {
       result.line = compactLine;
-    } else if (options.lineMode === 'stripped') {
+    } else if (lineMode === 'stripped') {
       result.line = strippedLine;
     } else {
       result.line = originalLine;
@@ -180,7 +220,7 @@ const parseLine = (() => {
         value = argument;
       }
 
-      if (options.flatten) {
+      if (flatten) {
         result.words.push(letter + value);
       } else {
         result.words.push([letter, value]);
@@ -245,10 +285,6 @@ const parseFile = (file, options, callback = noop) => {
   return parseStream(s, options, callback);
 };
 
-const parseFileSync = (file, options) => {
-  return parseStringSync(fs.readFileSync(file, 'utf8'), options);
-};
-
 // @param {string} str The G-code text string
 // @param {options} options The options object
 // @param {function} callback The callback function
@@ -261,7 +297,6 @@ const parseString = (str, options, callback = noop) => {
 };
 
 const parseStringSync = (str, options) => {
-  const { flatten = false } = { ...options };
   const results = [];
   const lines = str.split('\n');
 
@@ -270,13 +305,15 @@ const parseStringSync = (str, options) => {
     if (line.length === 0) {
       continue;
     }
-    const result = parseLine(line, {
-      flatten,
-    });
+    const result = parseLine(line, options);
     results.push(result);
   }
 
   return results;
+};
+
+const parseFileSync = (file, options) => {
+  return parseStringSync(fs.readFileSync(file, 'utf8'), options);
 };
 
 // @param {string} str The G-code text string
@@ -288,7 +325,9 @@ class GCodeLineStream extends Transform {
   };
 
   options = {
-    batchSize: 1000,
+    batchSize: DEFAULT_BATCH_SIZE,
+    flatten: DEFAULT_FLATTEN,
+    lineMode: DEFAULT_LINE_MODE,
   };
 
   lineBuffer = '';
@@ -298,6 +337,7 @@ class GCodeLineStream extends Transform {
   // @param {object} [options] The options object
   // @param {number} [options.batchSize] The batch size.
   // @param {boolean} [options.flatten] True to flatten the array, false otherwise.
+  // @param {number} [options.lineMode] The line mode.
   constructor(options = {}) {
     super({ objectMode: true });
 
@@ -349,9 +389,7 @@ class GCodeLineStream extends Transform {
     iterateArray(lines, { batchSize: this.options.batchSize }, (line) => {
       line = line.trim();
       if (line.length > 0) {
-        const result = parseLine(line, {
-          flatten: this.options.flatten,
-        });
+        const result = parseLine(line, this.options);
         this.push(result);
       }
     }, next);
@@ -361,9 +399,7 @@ class GCodeLineStream extends Transform {
     if (this.lineBuffer) {
       const line = this.lineBuffer.trim();
       if (line.length > 0) {
-        const result = parseLine(line, {
-          flatten: this.options.flatten,
-        });
+        const result = parseLine(line, this.options);
         this.push(result);
       }
 
@@ -377,10 +413,10 @@ class GCodeLineStream extends Transform {
 
 export {
   GCodeLineStream,
-  parseLine,
-  parseStream,
   parseFile,
   parseFileSync,
+  parseLine,
+  parseStream,
   parseString,
   parseStringSync
 };
