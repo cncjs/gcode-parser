@@ -60,87 +60,86 @@ const iterateArray = (arr = [], opts = {}, iteratee = noop, done = noop) => {
   loop();
 };
 
+// http://reprap.org/wiki/G-code#Special_fields
+// The checksum "cs" for a GCode string "cmd" (including its line number) is computed
+// by exor-ing the bytes in the string up to and not including the * character.
+const computeChecksum = (s) => {
+  s = s || '';
+  if (s.lastIndexOf('*') >= 0) {
+    s = s.substr(0, s.lastIndexOf('*'));
+  }
+
+  let cs = 0;
+  for (let i = 0; i < s.length; ++i) {
+    const c = s[i].charCodeAt(0);
+    cs ^= c;
+  }
+  return cs;
+};
+
+// Strips comments from a G-code line and returns stripped line and comments.
+const stripCommentsEx = (line) => {
+  // http://linuxcnc.org/docs/html/gcode/overview.html#gcode:comments
+  // Comments can be included in a line using either parentheses "()" or a semicolon ";" to mark the rest of the line.
+  // If a semicolon is enclosed within parentheses, it is not interpreted as the start of a comment.
+  let strippedLine = '';
+  let currentComment = '';
+  let comments = [];
+  let openParens = 0;
+
+  // Detect semicolon comments before parentheses
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];
+
+    if (char === ';' && openParens === 0) {
+      // Start semicolon comment outside parentheses
+      comments.push(line.slice(i + 1).trim());
+      openParens = 0; // Reset parentheses counter
+      break; // Stop further processing after a semicolon comment
+    }
+
+    if (char === '(') {
+      // Start parentheses comment
+      if (openParens === 0) {
+        currentComment = '';
+      } else if (openParens > 0) {
+        currentComment += char;
+      }
+      openParens = Math.min(openParens + 1, Number.MAX_SAFE_INTEGER);
+    } else if (char === ')') {
+      // End parentheses comment
+      openParens = Math.max(0, openParens - 1);
+      if (openParens === 0) {
+        comments.push(currentComment.trim());
+        currentComment = '';
+      } else if (openParens > 0) {
+        currentComment += char;
+      }
+    } else if (openParens > 0) {
+      // Inside parentheses comment
+      currentComment += char;
+    } else {
+      // Normal text outside comments
+      strippedLine += char;
+    }
+  }
+
+  strippedLine = strippedLine.trim();
+
+  return [strippedLine, comments];
+};
+
+// Returns the stripped line without comments.
+const stripComments = (line) => stripCommentsEx(line)[0];
+
+// Removes whitespace characters.
+const stripWhitespace = (line) => {
+  const re = new RegExp(/\s+/g);
+  return line.replace(re, '');
+};
+
 // @param {string} line The G-code line
 const parseLine = (() => {
-  // http://reprap.org/wiki/G-code#Special_fields
-  // The checksum "cs" for a GCode string "cmd" (including its line number) is computed
-  // by exor-ing the bytes in the string up to and not including the * character.
-  const computeChecksum = (s) => {
-    s = s || '';
-    if (s.lastIndexOf('*') >= 0) {
-      s = s.substr(0, s.lastIndexOf('*'));
-    }
-
-    let cs = 0;
-    for (let i = 0; i < s.length; ++i) {
-      const c = s[i].charCodeAt(0);
-      cs ^= c;
-    }
-    return cs;
-  };
-  // http://linuxcnc.org/docs/html/gcode/overview.html#gcode:comments
-  // Comments can be embedded in a line using parentheses () or for the remainder of a lineusing a semi-colon.
-  // The semi-colon is not treated as the start of a comment when enclosed in parentheses.
-  const stripComments = (() => {
-    const _stripComments = (line) => {
-      let result = '';
-      let currentComment = '';
-      let comments = [];
-      let openParens = 0;
-
-      // Detect semicolon comments before parentheses
-      for (let i = 0; i < line.length; i++) {
-        const char = line[i];
-
-        if (char === ';' && openParens === 0) {
-          // Start semicolon comment outside parentheses
-          comments.push(line.slice(i + 1).trim());
-          openParens = 0; // Reset parentheses counter
-          break; // Stop further processing after a semicolon comment
-        }
-
-        if (char === '(') {
-          // Start parentheses comment
-          if (openParens === 0) {
-            currentComment = '';
-          } else if (openParens > 0) {
-            currentComment += char;
-          }
-          openParens = Math.min(openParens + 1, Number.MAX_SAFE_INTEGER);
-        } else if (char === ')') {
-          // End parentheses comment
-          openParens = Math.max(0, openParens - 1);
-          if (openParens === 0) {
-            comments.push(currentComment.trim());
-            currentComment = '';
-          } else if (openParens > 0) {
-            currentComment += char;
-          }
-        } else if (openParens > 0) {
-          // Inside parentheses comment
-          currentComment += char;
-        } else {
-          // Normal text outside comments
-          result += char;
-        }
-      }
-
-      result = result.trim();
-      return [result, comments];
-    };
-
-    return (line) => {
-      const [strippedLine, comments] = _stripComments(line);
-      return [strippedLine, comments];
-    };
-  })();
-
-  const stripWhitespace = (line) => {
-    // Remove whitespace characters
-    const re = new RegExp(/\s+/g);
-    return line.replace(re, '');
-  };
-
   // eslint-disable-next-line no-useless-escape
   const re = /(%.*)|({.*)|((?:\$\$)|(?:\$[a-zA-Z0-9#]*))|([a-zA-Z][0-9\+\-\.]+)|(\*[0-9]+)/igm;
 
@@ -159,7 +158,7 @@ const parseLine = (() => {
     let ln; // Line number
     let cs; // Checksum
     const originalLine = line;
-    const [strippedLine, comments] = stripComments(line);
+    const [strippedLine, comments] = stripCommentsEx(line);
     const compactLine = stripWhitespace(strippedLine);
 
     if (lineMode === 'compact') {
@@ -418,5 +417,6 @@ export {
   parseLine,
   parseStream,
   parseString,
-  parseStringSync
+  parseStringSync,
+  stripComments,
 };
