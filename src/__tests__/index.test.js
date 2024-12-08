@@ -6,7 +6,8 @@ import {
   parseString,
   parseStringSync,
   parseFile,
-  parseFileSync
+  parseFileSync,
+  stripComments,
 } from '..';
 
 describe('Pass a null value as the first argument', () => {
@@ -148,6 +149,7 @@ describe('Commands', () => {
 describe('Stripping comments', () => {
   it('should correctly parse a semicolon comment before parentheses', () => {
     const line = 'M6 ; comment (tool change) T1';
+    expect(stripComments(line)).toBe('M6');
     const data = parseLine(line, { lineMode: 'stripped' });
     expect(data.line).toBe('M6');
     expect(data.comments).toEqual([
@@ -157,6 +159,7 @@ describe('Stripping comments', () => {
 
   it('should correctly parse nested parentheses containing a semicolon', () => {
     const line = 'M6 (outer (inner;)) T1 ; comment';
+    expect(stripComments(line)).toBe('M6  T1');
     const data = parseLine(line, { lineMode: 'stripped' });
     expect(data.line).toBe('M6  T1');
     expect(data.comments).toEqual([
@@ -167,6 +170,7 @@ describe('Stripping comments', () => {
 
   it('should correctly parse multiple comments in a line', () => {
     const line = 'M6 (first comment) T1 ; second comment';
+    expect(stripComments(line)).toBe('M6  T1');
     const data = parseLine(line, { lineMode: 'stripped' });
     expect(data.line).toBe('M6  T1');
     expect(data.comments).toEqual([
